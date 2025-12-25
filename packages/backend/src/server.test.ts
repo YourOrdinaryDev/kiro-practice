@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify from 'fastify';
 import { initializeDatabase, closeDatabase } from './database/index.js';
 import { TodoService } from './services/TodoService.js';
+import { sessionMiddleware, extractUsername } from './middleware/sessionMiddleware.js';
 import type { ApiResponse, ApiError } from './types/todo.js';
 
 // Create a test server instance
@@ -63,6 +64,18 @@ const createTestServer = async () => {
       return reply.status(400).send(errorResponse);
     }
 
+    // Handle authentication errors (username validation failures)
+    if (error.message && error.message.includes('Username not found in request')) {
+      const errorResponse: ApiError = {
+        success: false,
+        error: {
+          code: 'AUTHENTICATION_ERROR',
+          message: 'Authentication required. Valid username must be provided.',
+        },
+      };
+      return reply.status(401).send(errorResponse);
+    }
+
     // Handle service-level validation errors (like whitespace-only text)
     if (error.message && (
       error.message.includes('cannot be empty') ||
@@ -97,6 +110,7 @@ const createTestServer = async () => {
 
   // POST /api/todos - Create a new todo
   fastify.post('/api/todos', {
+    preHandler: sessionMiddleware,
     schema: {
       body: { $ref: 'createTodoRequest#' },
       response: {
@@ -112,8 +126,9 @@ const createTestServer = async () => {
     }
   }, async (request, reply) => {
     try {
+      const username = extractUsername(request);
       const { text } = request.body as { text: string };
-      const todo = await todoService.createTodo({ text });
+      const todo = await todoService.createTodo(username, { text });
       const response: ApiResponse<typeof todo> = {
         data: todo,
         success: true
@@ -126,6 +141,7 @@ const createTestServer = async () => {
 
   // PUT /api/todos/:id - Update todo completion status
   fastify.put('/api/todos/:id', {
+    preHandler: sessionMiddleware,
     schema: {
       params: {
         type: 'object',
@@ -148,9 +164,10 @@ const createTestServer = async () => {
     }
   }, async (request, reply) => {
     try {
+      const username = extractUsername(request);
       const { id } = request.params as { id: number };
       const { completed } = request.body as { completed: boolean };
-      const todo = await todoService.updateTodo(id, { completed });
+      const todo = await todoService.updateTodo(username, id, { completed });
       const response: ApiResponse<typeof todo> = {
         data: todo,
         success: true
@@ -182,6 +199,9 @@ describe('Server API Endpoints', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/api/todos',
+        headers: {
+          'X-Username': 'testuser'
+        },
         payload: {
           text: 'Test todo item'
         }
@@ -204,6 +224,9 @@ describe('Server API Endpoints', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/api/todos',
+        headers: {
+          'X-Username': 'testuser'
+        },
         payload: {
           text: ''
         }
@@ -220,6 +243,9 @@ describe('Server API Endpoints', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/api/todos',
+        headers: {
+          'X-Username': 'testuser'
+        },
         payload: {
           text: '   '
         }
@@ -236,6 +262,9 @@ describe('Server API Endpoints', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/api/todos',
+        headers: {
+          'X-Username': 'testuser'
+        },
         payload: {}
       });
 
@@ -251,6 +280,9 @@ describe('Server API Endpoints', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/api/todos',
+        headers: {
+          'X-Username': 'testuser'
+        },
         payload: {
           text: longText
         }
@@ -270,6 +302,9 @@ describe('Server API Endpoints', () => {
       const createResponse = await server.inject({
         method: 'POST',
         url: '/api/todos',
+        headers: {
+          'X-Username': 'testuser'
+        },
         payload: {
           text: 'Test todo for update'
         }
@@ -281,6 +316,9 @@ describe('Server API Endpoints', () => {
       const updateResponse = await server.inject({
         method: 'PUT',
         url: `/api/todos/${createdTodo.id}`,
+        headers: {
+          'X-Username': 'testuser'
+        },
         payload: {
           completed: true
         }
@@ -301,6 +339,9 @@ describe('Server API Endpoints', () => {
       const response = await server.inject({
         method: 'PUT',
         url: '/api/todos/invalid',
+        headers: {
+          'X-Username': 'testuser'
+        },
         payload: {
           completed: true
         }
@@ -317,6 +358,9 @@ describe('Server API Endpoints', () => {
       const response = await server.inject({
         method: 'PUT',
         url: '/api/todos/99999',
+        headers: {
+          'X-Username': 'testuser'
+        },
         payload: {
           completed: true
         }
@@ -333,6 +377,9 @@ describe('Server API Endpoints', () => {
       const response = await server.inject({
         method: 'PUT',
         url: '/api/todos/1',
+        headers: {
+          'X-Username': 'testuser'
+        },
         payload: {}
       });
 

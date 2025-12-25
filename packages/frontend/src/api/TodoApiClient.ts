@@ -6,9 +6,49 @@ import type { Todo, CreateTodoRequest, UpdateTodoRequest, ApiResponse, ApiError 
  */
 export class TodoApiClient {
   private readonly baseUrl: string;
+  private username: string | null = null;
 
   constructor(baseUrl: string = 'http://localhost:3001') {
     this.baseUrl = baseUrl;
+  }
+
+  /**
+   * Set the username for API authentication
+   * @param username The username to use for API requests
+   */
+  setUsername(username: string): void {
+    this.username = username;
+  }
+
+  /**
+   * Clear the username context
+   */
+  clearUsername(): void {
+    this.username = null;
+  }
+
+  /**
+   * Get the current username
+   * @returns The current username or null if not set
+   */
+  getCurrentUsername(): string | null {
+    return this.username;
+  }
+
+  /**
+   * Create headers for API requests including authentication
+   * @returns Headers object with Content-Type and X-Username if available
+   */
+  private createHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.username) {
+      headers['X-Username'] = this.username;
+    }
+
+    return headers;
   }
 
   /**
@@ -20,9 +60,7 @@ export class TodoApiClient {
     try {
       const response = await fetch(`${this.baseUrl}/api/todos`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.createHeaders(),
       });
 
       if (!response.ok) {
@@ -57,9 +95,7 @@ export class TodoApiClient {
 
       const response = await fetch(`${this.baseUrl}/api/todos`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.createHeaders(),
         body: JSON.stringify(requestBody),
       });
 
@@ -96,9 +132,7 @@ export class TodoApiClient {
 
       const response = await fetch(`${this.baseUrl}/api/todos/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.createHeaders(),
         body: JSON.stringify(requestBody),
       });
 
@@ -132,9 +166,7 @@ export class TodoApiClient {
     try {
       const response = await fetch(`${this.baseUrl}/api/todos/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.createHeaders(),
       });
 
       if (!response.ok) {
@@ -174,6 +206,12 @@ export class TodoApiClient {
     switch (response.status) {
       case 400:
         throw new Error(`Invalid request: ${errorMessage}`);
+      case 401:
+        // Authentication required - session may have expired or username missing
+        throw new AuthenticationError(`Authentication required: ${errorMessage}`);
+      case 403:
+        // Access denied - user doesn't have permission for this resource
+        throw new AuthenticationError(`Access denied: ${errorMessage}`);
       case 404:
         throw new Error(`Resource not found: ${errorMessage}`);
       case 500:
@@ -181,6 +219,17 @@ export class TodoApiClient {
       default:
         throw new Error(`Request failed: ${errorMessage}`);
     }
+  }
+}
+
+/**
+ * Custom error class for authentication-related errors
+ * Used to distinguish authentication failures from other API errors
+ */
+export class AuthenticationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthenticationError';
   }
 }
 

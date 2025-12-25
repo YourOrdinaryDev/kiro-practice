@@ -6,7 +6,7 @@ This implementation plan converts the multi-user support design into discrete co
 
 ## Tasks
 
-- [ ] 1. Database schema migration for multi-user support
+- [x] 1. Database schema migration for multi-user support
   - Add username column to todos table with NOT NULL constraint
   - Create database indexes for username-based queries
   - Create migration script to handle existing data
@@ -17,8 +17,8 @@ This implementation plan converts the multi-user support design into discrete co
   - **Property 5: Todo Ownership Association**
   - **Validates: Requirements 3.1, 5.4**
 
-- [ ] 2. Backend session middleware implementation
-  - [ ] 2.1 Create session middleware for username extraction and validation
+- [-] 2. Backend session middleware implementation
+  - [x] 2.1 Create session middleware for username extraction and validation
     - Implement middleware to extract X-Username header from requests
     - Add username validation logic (1-50 non-whitespace characters)
     - Handle missing or invalid username scenarios
@@ -32,8 +32,8 @@ This implementation plan converts the multi-user support design into discrete co
     - **Property 8: API Authentication Requirement**
     - **Validates: Requirements 6.1, 6.4**
 
-- [ ] 3. Enhanced TodoService with user context
-  - [ ] 3.1 Modify TodoService to accept username parameter in all methods
+- [-] 3. Enhanced TodoService with user context
+  - [x] 3.1 Modify TodoService to accept username parameter in all methods
     - Update getAllTodos to filter by username
     - Update createTodo to associate todos with username
     - Update updateTodo and deleteTodo to enforce ownership
@@ -47,8 +47,8 @@ This implementation plan converts the multi-user support design into discrete co
     - **Property 6: Access Control Enforcement**
     - **Validates: Requirements 3.3, 3.4, 6.3**
 
-- [ ] 4. Update API endpoints with session middleware
-  - [ ] 4.1 Integrate session middleware into all todo API routes
+- [-] 4. Update API endpoints with session middleware
+  - [x] 4.1 Integrate session middleware into all todo API routes
     - Apply middleware to GET, POST, PUT, DELETE /api/todos endpoints
     - Pass username context to TodoService methods
     - Update error handling for authentication failures
@@ -63,8 +63,8 @@ This implementation plan converts the multi-user support design into discrete co
 - [ ] 5. Checkpoint - Backend functionality complete
   - Ensure all backend tests pass, ask the user if questions arise.
 
-- [ ] 6. Frontend session management implementation
-  - [ ] 6.1 Create SessionManager class for username persistence
+- [-] 6. Frontend session management implementation
+  - [x] 6.1 Create SessionManager class for username persistence
     - Implement username storage in sessionStorage
     - Add methods for setting, getting, and clearing username
     - Handle session validation and expiry
@@ -78,8 +78,8 @@ This implementation plan converts the multi-user support design into discrete co
     - **Property 9: Session Cleanup**
     - **Validates: Requirements 4.2**
 
-- [ ] 7. Username entry UI component
-  - [ ] 7.1 Create UsernameEntry Vue component
+- [-] 7. Username entry UI component
+  - [x] 7.1 Create UsernameEntry Vue component
     - Build username input form with validation
     - Implement client-side username validation
     - Handle form submission and error display
@@ -95,8 +95,8 @@ This implementation plan converts the multi-user support design into discrete co
     - Test username length validation
     - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 8. Enhanced API client with username context
-  - [ ] 8.1 Extend TodoApiClient to include username in headers
+- [-] 8. Enhanced API client with username context
+  - [x] 8.1 Extend TodoApiClient to include username in headers
     - Add setUsername method to configure user context
     - Modify all API calls to include X-Username header
     - Handle authentication errors and session expiry
@@ -107,8 +107,8 @@ This implementation plan converts the multi-user support design into discrete co
     - Test error handling for authentication failures
     - _Requirements: 6.1_
 
-- [ ] 9. Main application integration and routing
-  - [ ] 9.1 Update App.vue to handle session-based routing
+- [-] 9. Main application integration and routing
+  - [x] 9.1 Update App.vue to handle session-based routing
     - Add conditional rendering based on session state
     - Integrate UsernameEntry component for new sessions
     - Display current username in active sessions

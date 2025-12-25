@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import { initializeDatabase, closeDatabase } from './database/index.js';
 import { TodoService } from './services/TodoService.js';
+import { sessionMiddleware, extractUsername } from './middleware/sessionMiddleware.js';
 import type { ApiError, ApiResponse } from './types/todo.js';
 
 const fastify = Fastify({
@@ -69,6 +70,18 @@ fastify.setErrorHandler(async (error, request, reply) => {
       },
     };
     return reply.status(400).send(errorResponse);
+  }
+
+  // Handle authentication errors (username validation failures)
+  if (error.message && error.message.includes('Username not found in request')) {
+    const errorResponse: ApiError = {
+      success: false,
+      error: {
+        code: 'AUTHENTICATION_ERROR',
+        message: 'Authentication required. Valid username must be provided.',
+      },
+    };
+    return reply.status(401).send(errorResponse);
   }
 
   // Handle service-level validation errors (like whitespace-only text)
@@ -151,6 +164,7 @@ const todoService = new TodoService();
 
 // GET /api/todos - Retrieve all todos
 fastify.get('/api/todos', {
+  preHandler: sessionMiddleware,
   schema: {
     response: {
       200: {
@@ -168,7 +182,8 @@ fastify.get('/api/todos', {
   }
 }, async (request, reply) => {
   try {
-    const todos = await todoService.getAllTodos();
+    const username = extractUsername(request);
+    const todos = await todoService.getAllTodos(username);
     const response: ApiResponse<typeof todos> = {
       data: todos,
       success: true
@@ -182,6 +197,7 @@ fastify.get('/api/todos', {
 
 // POST /api/todos - Create a new todo
 fastify.post('/api/todos', {
+  preHandler: sessionMiddleware,
   schema: {
     body: { $ref: 'createTodoRequest#' },
     response: {
@@ -197,8 +213,9 @@ fastify.post('/api/todos', {
   }
 }, async (request, reply) => {
   try {
+    const username = extractUsername(request);
     const { text } = request.body as { text: string };
-    const todo = await todoService.createTodo({ text });
+    const todo = await todoService.createTodo(username, { text });
     const response: ApiResponse<typeof todo> = {
       data: todo,
       success: true
@@ -212,6 +229,7 @@ fastify.post('/api/todos', {
 
 // PUT /api/todos/:id - Update todo completion status
 fastify.put('/api/todos/:id', {
+  preHandler: sessionMiddleware,
   schema: {
     params: {
       type: 'object',
@@ -234,9 +252,10 @@ fastify.put('/api/todos/:id', {
   }
 }, async (request, reply) => {
   try {
+    const username = extractUsername(request);
     const { id } = request.params as { id: number };
     const { completed } = request.body as { completed: boolean };
-    const todo = await todoService.updateTodo(id, { completed });
+    const todo = await todoService.updateTodo(username, id, { completed });
     const response: ApiResponse<typeof todo> = {
       data: todo,
       success: true
@@ -250,6 +269,7 @@ fastify.put('/api/todos/:id', {
 
 // DELETE /api/todos/:id - Delete a todo
 fastify.delete('/api/todos/:id', {
+  preHandler: sessionMiddleware,
   schema: {
     params: {
       type: 'object',
@@ -270,8 +290,9 @@ fastify.delete('/api/todos/:id', {
   }
 }, async (request, reply) => {
   try {
+    const username = extractUsername(request);
     const { id } = request.params as { id: number };
-    await todoService.deleteTodo(id);
+    await todoService.deleteTodo(username, id);
     const response = {
       success: true
     };
