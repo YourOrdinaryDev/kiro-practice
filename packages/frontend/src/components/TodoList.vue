@@ -84,7 +84,11 @@ const emit = defineEmits<Emits>();
 const incompleteTodos = computed((): Todo[] => {
   return props.todos
     .filter(todo => !todo.completed)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    .sort((a, b) => {
+      const dateA = a.created_at instanceof Date ? a.created_at : new Date(a.created_at);
+      const dateB = b.created_at instanceof Date ? b.created_at : new Date(b.created_at);
+      return dateB.getTime() - dateA.getTime();
+    });
 });
 
 /**
@@ -94,7 +98,11 @@ const incompleteTodos = computed((): Todo[] => {
 const completedTodos = computed((): Todo[] => {
   return props.todos
     .filter(todo => todo.completed)
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    .sort((a, b) => {
+      const dateA = a.created_at instanceof Date ? a.created_at : new Date(a.created_at);
+      const dateB = b.created_at instanceof Date ? b.created_at : new Date(b.created_at);
+      return dateB.getTime() - dateA.getTime();
+    });
 });
 
 /**

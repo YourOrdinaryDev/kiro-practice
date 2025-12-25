@@ -1,4 +1,32 @@
-import type { Todo, CreateTodoRequest, UpdateTodoRequest, ApiResponse, ApiError } from '../types/todo.js';
+import type { Todo, TodoList, User, CreateTodoRequest, UpdateTodoRequest, CreateTodoListRequest, UpdateTodoListRequest, CreateUserRequest, MoveTodoRequest, ApiResponse, ApiError } from '../types/todo.js';
+
+/**
+ * Safely convert a date string or Date object to a Date instance
+ * @param dateValue The date value to convert (string, Date, or potentially undefined)
+ * @returns A valid Date object, or current date if conversion fails
+ */
+function safelyConvertDate(dateValue: any): Date {
+  if (!dateValue) {
+    return new Date();
+  }
+  
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+  
+  try {
+    const converted = new Date(dateValue);
+    // Check if the date is valid
+    if (isNaN(converted.getTime())) {
+      console.warn('Invalid date value received:', dateValue);
+      return new Date();
+    }
+    return converted;
+  } catch (error) {
+    console.warn('Error converting date:', dateValue, error);
+    return new Date();
+  }
+}
 
 /**
  * HTTP client for Todo API operations
@@ -52,7 +80,263 @@ export class TodoApiClient {
   }
 
   /**
-   * Retrieve all todos from the backend
+   * Get or create a user by username
+   * @param username The username to get or create
+   * @returns Promise<User> The user object
+   * @throws Error if the request fails
+   */
+  async getOrCreateUser(username: string): Promise<User> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/users/${encodeURIComponent(username)}`, {
+        method: 'GET',
+        headers: this.createHeaders(),
+      });
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      const result: ApiResponse<User> = await response.json();
+      
+      return {
+        ...result.data,
+        created_at: safelyConvertDate(result.data.created_at),
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to get or create user: Unknown error occurred');
+    }
+  }
+
+  /**
+   * Get all todo lists for a user
+   * @param userId The user ID to get lists for
+   * @returns Promise<TodoList[]> Array of todo lists
+   * @throws Error if the request fails
+   */
+  async getListsForUser(userId: number): Promise<TodoList[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/users/${userId}/lists`, {
+        method: 'GET',
+        headers: this.createHeaders(),
+      });
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      const result: ApiResponse<TodoList[]> = await response.json();
+      
+      return result.data.map(list => ({
+        ...list,
+        created_at: safelyConvertDate(list.created_at),
+      }));
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to fetch lists: Unknown error occurred');
+    }
+  }
+
+  /**
+   * Create a new todo list
+   * @param userId The user ID to create the list for
+   * @param name The name of the new list
+   * @returns Promise<TodoList> The created list
+   * @throws Error if the request fails
+   */
+  async createList(userId: number, name: string): Promise<TodoList> {
+    try {
+      const requestBody: CreateTodoListRequest = { name, user_id: userId };
+
+      const response = await fetch(`${this.baseUrl}/api/users/${userId}/lists`, {
+        method: 'POST',
+        headers: this.createHeaders(),
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      const result: ApiResponse<TodoList> = await response.json();
+      
+      return {
+        ...result.data,
+        created_at: safelyConvertDate(result.data.created_at),
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to create list: Unknown error occurred');
+    }
+  }
+
+  /**
+   * Update a todo list name
+   * @param listId The list ID to update
+   * @param name The new name for the list
+   * @returns Promise<TodoList> The updated list
+   * @throws Error if the request fails
+   */
+  async updateList(listId: number, name: string): Promise<TodoList> {
+    try {
+      const requestBody: UpdateTodoListRequest = { name };
+
+      const response = await fetch(`${this.baseUrl}/api/lists/${listId}`, {
+        method: 'PUT',
+        headers: this.createHeaders(),
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      const result: ApiResponse<TodoList> = await response.json();
+      
+      return {
+        ...result.data,
+        created_at: safelyConvertDate(result.data.created_at),
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to update list: Unknown error occurred');
+    }
+  }
+
+  /**
+   * Delete a todo list
+   * @param listId The list ID to delete
+   * @returns Promise<void> Resolves when deletion is successful
+   * @throws Error if the request fails
+   */
+  async deleteList(listId: number): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/lists/${listId}`, {
+        method: 'DELETE',
+        headers: this.createHeaders(),
+      });
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to delete list: Unknown error occurred');
+    }
+  }
+
+  /**
+   * Get todos for a specific list
+   * @param listId The list ID to get todos for
+   * @returns Promise<Todo[]> Array of todos in the list
+   * @throws Error if the request fails
+   */
+  async getTodosInList(listId: number): Promise<Todo[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/lists/${listId}/todos`, {
+        method: 'GET',
+        headers: this.createHeaders(),
+      });
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      const result: ApiResponse<Todo[]> = await response.json();
+      
+      return result.data.map(todo => ({
+        ...todo,
+        created_at: safelyConvertDate(todo.created_at),
+      }));
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to fetch todos: Unknown error occurred');
+    }
+  }
+
+  /**
+   * Create a new todo in a specific list
+   * @param listId The list ID to create the todo in
+   * @param text The todo description text
+   * @returns Promise<Todo> The created todo
+   * @throws Error if the request fails
+   */
+  async createTodoInList(listId: number, text: string): Promise<Todo> {
+    try {
+      const requestBody: CreateTodoRequest = { text, list_id: listId };
+
+      const response = await fetch(`${this.baseUrl}/api/lists/${listId}/todos`, {
+        method: 'POST',
+        headers: this.createHeaders(),
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      const result: ApiResponse<Todo> = await response.json();
+      
+      return {
+        ...result.data,
+        created_at: safelyConvertDate(result.data.created_at),
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to create todo: Unknown error occurred');
+    }
+  }
+
+  /**
+   * Move a todo to a different list
+   * @param todoId The todo ID to move
+   * @param targetListId The target list ID
+   * @returns Promise<Todo> The updated todo
+   * @throws Error if the request fails
+   */
+  async moveTodoToList(todoId: number, targetListId: number): Promise<Todo> {
+    try {
+      const requestBody: MoveTodoRequest = { target_list_id: targetListId };
+
+      const response = await fetch(`${this.baseUrl}/api/todos/${todoId}/move`, {
+        method: 'PUT',
+        headers: this.createHeaders(),
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      const result: ApiResponse<Todo> = await response.json();
+      
+      return {
+        ...result.data,
+        created_at: safelyConvertDate(result.data.created_at),
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to move todo: Unknown error occurred');
+    }
+  }
+  /**
+   * Retrieve all todos from the backend (legacy method for backward compatibility)
    * @returns Promise<Todo[]> Array of all todos
    * @throws Error if the request fails or returns an error response
    */
@@ -72,8 +356,7 @@ export class TodoApiClient {
       // Convert date strings back to Date objects
       return result.data.map(todo => ({
         ...todo,
-        createdAt: new Date(todo.createdAt),
-        updatedAt: new Date(todo.updatedAt),
+        created_at: safelyConvertDate(todo.created_at),
       }));
     } catch (error) {
       if (error instanceof Error) {
@@ -108,8 +391,7 @@ export class TodoApiClient {
       // Convert date strings back to Date objects
       return {
         ...result.data,
-        createdAt: new Date(result.data.createdAt),
-        updatedAt: new Date(result.data.updatedAt),
+        created_at: safelyConvertDate(result.data.created_at),
       };
     } catch (error) {
       if (error instanceof Error) {
@@ -145,8 +427,7 @@ export class TodoApiClient {
       // Convert date strings back to Date objects
       return {
         ...result.data,
-        createdAt: new Date(result.data.createdAt),
-        updatedAt: new Date(result.data.updatedAt),
+        created_at: safelyConvertDate(result.data.created_at),
       };
     } catch (error) {
       if (error instanceof Error) {

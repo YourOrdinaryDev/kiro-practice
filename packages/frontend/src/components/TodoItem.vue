@@ -30,7 +30,7 @@
         <div class="todo-metadata">
           <span class="todo-date">
             {{ todo.completed ? 'Completed' : 'Created' }} 
-            {{ formatDate(todo.completed ? todo.updatedAt : todo.createdAt) }}
+            {{ formatDate(todo.created_at) }}
           </span>
           <span v-if="todo.completed" class="completion-badge">
             ✓ Done
@@ -98,7 +98,11 @@ const handleDelete = (): void => {
  * Format date for display
  * Implements Requirements 2.2 - Display creation timestamp
  */
-const formatDate = (date: Date): string => {
+const formatDate = (date: Date | undefined): string => {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return 'unknown';
+  }
+  
   const now = new Date();
   const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
   

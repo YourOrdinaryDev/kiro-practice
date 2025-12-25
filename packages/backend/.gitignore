@@ -1,4 +1,5 @@
-
+# SQLite database files
+*.db
 
 # SQLite database files
 todos.db

@@ -12,7 +12,7 @@
           type="text"
           class="todo-input"
           :class="{ 'input-error': validationError }"
-          placeholder="What needs to be done?"
+          :placeholder="placeholder"
           :disabled="submitting"
           maxlength="500"
           @input="clearValidationError"
@@ -45,10 +45,12 @@ import { ref, computed, nextTick } from 'vue';
 // Props
 interface Props {
   submitting?: boolean;
+  placeholder?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   submitting: false,
+  placeholder: 'What needs to be done?',
 });
 
 // Emits
