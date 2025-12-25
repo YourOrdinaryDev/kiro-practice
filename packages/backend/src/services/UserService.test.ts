@@ -18,17 +18,17 @@ describe('UserService', () => {
     // Create a new database connection for testing
     db = new DatabaseConnection(testDbPath);
     await db.connect();
-    
+
     // Initialize the database with migrations using the test database
     const migrations = new DatabaseMigrations(db);
     await migrations.initializeDatabase();
-    
+
     userService = new UserService(db);
   });
 
   afterEach(async () => {
     await db.close();
-    
+
     // Clean up test database file
     if (fs.existsSync(testDbPath)) {
       fs.unlinkSync(testDbPath);
@@ -38,9 +38,9 @@ describe('UserService', () => {
   describe('getOrCreateUser', () => {
     it('should create a new user when username does not exist', async () => {
       const username = 'testuser';
-      
+
       const user = await userService.getOrCreateUser(username);
-      
+
       expect(user).toBeDefined();
       expect(user.username).toBe(username);
       expect(user.id).toBeGreaterThan(0);
@@ -49,29 +49,31 @@ describe('UserService', () => {
 
     it('should return existing user when username already exists', async () => {
       const username = 'existinguser';
-      
+
       // Create user first time
       const firstUser = await userService.getOrCreateUser(username);
-      
+
       // Get user second time
       const secondUser = await userService.getOrCreateUser(username);
-      
+
       expect(firstUser.id).toBe(secondUser.id);
       expect(firstUser.username).toBe(secondUser.username);
-      expect(firstUser.created_at.getTime()).toBe(secondUser.created_at.getTime());
+      expect(firstUser.created_at.getTime()).toBe(
+        secondUser.created_at.getTime()
+      );
     });
 
     it('should create default list when creating new user', async () => {
       const username = 'newuser';
-      
+
       const user = await userService.getOrCreateUser(username);
-      
+
       // Check that default list was created
       const lists = await db.all(
         'SELECT * FROM todo_lists WHERE user_id = ? AND name = ?',
         [user.id, 'My Tasks']
       );
-      
+
       expect(lists).toHaveLength(1);
       expect(lists[0].name).toBe('My Tasks');
       expect(lists[0].user_id).toBe(user.id);
@@ -104,9 +106,9 @@ describe('UserService', () => {
 
     it('should trim whitespace from username', async () => {
       const username = '  testuser  ';
-      
+
       const user = await userService.getOrCreateUser(username);
-      
+
       expect(user.username).toBe('testuser');
     });
   });
@@ -115,13 +117,13 @@ describe('UserService', () => {
     it('should create default list for existing user', async () => {
       // First create a user
       const user = await userService.getOrCreateUser('testuser');
-      
+
       // Delete the default list that was auto-created
       await db.run('DELETE FROM todo_lists WHERE user_id = ?', [user.id]);
-      
+
       // Now create default list manually
       const defaultList = await userService.createDefaultList(user.id);
-      
+
       expect(defaultList).toBeDefined();
       expect(defaultList.name).toBe('My Tasks');
       expect(defaultList.user_id).toBe(user.id);
@@ -132,13 +134,13 @@ describe('UserService', () => {
     it('should return existing default list if it already exists', async () => {
       // Create a user (which auto-creates default list)
       const user = await userService.getOrCreateUser('testuser');
-      
+
       // Try to create default list again
       const defaultList = await userService.createDefaultList(user.id);
-      
+
       expect(defaultList.name).toBe('My Tasks');
       expect(defaultList.user_id).toBe(user.id);
-      
+
       // Verify only one default list exists
       const lists = await db.all(
         'SELECT * FROM todo_lists WHERE user_id = ? AND name = ?',
@@ -151,11 +153,11 @@ describe('UserService', () => {
       await expect(userService.createDefaultList(0)).rejects.toThrow(
         'User ID must be a positive integer'
       );
-      
+
       await expect(userService.createDefaultList(-1)).rejects.toThrow(
         'User ID must be a positive integer'
       );
-      
+
       await expect(userService.createDefaultList(1.5)).rejects.toThrow(
         'User ID must be a positive integer'
       );
@@ -172,9 +174,9 @@ describe('UserService', () => {
     it('should return user when ID exists', async () => {
       const username = 'testuser';
       const createdUser = await userService.getOrCreateUser(username);
-      
+
       const foundUser = await userService.getUserById(createdUser.id);
-      
+
       expect(foundUser).toBeDefined();
       expect(foundUser!.id).toBe(createdUser.id);
       expect(foundUser!.username).toBe(username);
@@ -196,9 +198,9 @@ describe('UserService', () => {
     it('should return user when username exists', async () => {
       const username = 'testuser';
       const createdUser = await userService.getOrCreateUser(username);
-      
+
       const foundUser = await userService.getUserByUsername(username);
-      
+
       expect(foundUser).toBeDefined();
       expect(foundUser!.id).toBe(createdUser.id);
       expect(foundUser!.username).toBe(username);
@@ -218,9 +220,9 @@ describe('UserService', () => {
     it('should trim whitespace from username', async () => {
       const username = 'testuser';
       await userService.getOrCreateUser(username);
-      
+
       const foundUser = await userService.getUserByUsername('  testuser  ');
-      
+
       expect(foundUser).toBeDefined();
       expect(foundUser!.username).toBe(username);
     });

@@ -1,0 +1,12 @@
+{
+  "extends": [
+    "../../.eslintrc.json"
+  ],
+  "env": {
+    "node": true
+  },
+  "ignorePatterns": ["dist/**/*"],
+  "rules": {
+    "no-console": "off"
+  }
+}

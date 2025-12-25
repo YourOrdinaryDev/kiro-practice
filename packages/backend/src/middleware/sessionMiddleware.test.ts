@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { sessionMiddleware, validateUsername, extractUsername, type SessionRequest } from './sessionMiddleware.js';
+import {
+  sessionMiddleware,
+  validateUsername,
+  extractUsername,
+  type SessionRequest,
+} from './sessionMiddleware.js';
 
 describe('sessionMiddleware', () => {
   describe('validateUsername', () => {
@@ -36,9 +41,12 @@ describe('sessionMiddleware', () => {
   });
 
   describe('sessionMiddleware function', () => {
-    const createMockRequest = (headers: Record<string, string | undefined> = {}): FastifyRequest => ({
-      headers,
-    } as FastifyRequest);
+    const createMockRequest = (
+      headers: Record<string, string | undefined> = {}
+    ): FastifyRequest =>
+      ({
+        headers,
+      }) as FastifyRequest;
 
     const createMockReply = () => {
       const reply = {
@@ -70,17 +78,18 @@ describe('sessionMiddleware', () => {
         success: false,
         error: {
           code: 'INVALID_USERNAME',
-          message: 'Valid username is required. Username must be 1-50 non-whitespace characters.',
+          message:
+            'Valid username is required. Username must be 1-50 non-whitespace characters.',
           details: {
             header: 'X-Username',
             received: null,
             validationRules: [
               'Must be 1-50 characters long',
               'Cannot be empty or only whitespace',
-              'Must contain at least one non-whitespace character'
-            ]
-          }
-        }
+              'Must contain at least one non-whitespace character',
+            ],
+          },
+        },
       });
     });
 
@@ -95,17 +104,18 @@ describe('sessionMiddleware', () => {
         success: false,
         error: {
           code: 'INVALID_USERNAME',
-          message: 'Valid username is required. Username must be 1-50 non-whitespace characters.',
+          message:
+            'Valid username is required. Username must be 1-50 non-whitespace characters.',
           details: {
             header: 'X-Username',
             received: '',
             validationRules: [
               'Must be 1-50 characters long',
               'Cannot be empty or only whitespace',
-              'Must contain at least one non-whitespace character'
-            ]
-          }
-        }
+              'Must contain at least one non-whitespace character',
+            ],
+          },
+        },
       });
     });
 
@@ -120,17 +130,18 @@ describe('sessionMiddleware', () => {
         success: false,
         error: {
           code: 'INVALID_USERNAME',
-          message: 'Valid username is required. Username must be 1-50 non-whitespace characters.',
+          message:
+            'Valid username is required. Username must be 1-50 non-whitespace characters.',
           details: {
             header: 'X-Username',
             received: '   ',
             validationRules: [
               'Must be 1-50 characters long',
               'Cannot be empty or only whitespace',
-              'Must contain at least one non-whitespace character'
-            ]
-          }
-        }
+              'Must contain at least one non-whitespace character',
+            ],
+          },
+        },
       });
     });
 
@@ -146,17 +157,18 @@ describe('sessionMiddleware', () => {
         success: false,
         error: {
           code: 'INVALID_USERNAME',
-          message: 'Valid username is required. Username must be 1-50 non-whitespace characters.',
+          message:
+            'Valid username is required. Username must be 1-50 non-whitespace characters.',
           details: {
             header: 'X-Username',
             received: longUsername,
             validationRules: [
               'Must be 1-50 characters long',
               'Cannot be empty or only whitespace',
-              'Must contain at least one non-whitespace character'
-            ]
-          }
-        }
+              'Must contain at least one non-whitespace character',
+            ],
+          },
+        },
       });
     });
   });

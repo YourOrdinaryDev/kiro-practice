@@ -1,5 +1,9 @@
 import { DatabaseConnection, getDbConnection } from '../database/index.js';
-import { TodoList, CreateTodoListRequest, UpdateTodoListRequest } from '../types/todo.js';
+import {
+  TodoList,
+  CreateTodoListRequest,
+  UpdateTodoListRequest,
+} from '../types/todo.js';
 
 interface TodoListRow {
   id: number;
@@ -19,10 +23,13 @@ export class TodoListService {
   /**
    * Get all todo lists for a specific user with optional todo counts.
    * Returns lists ordered by creation date.
-   * 
+   *
    * Requirements: 2.4, 3.3, 5.1
    */
-  async getListsForUser(userId: number, includeTodoCount: boolean = false): Promise<TodoList[]> {
+  async getListsForUser(
+    userId: number,
+    includeTodoCount: boolean = false
+  ): Promise<TodoList[]> {
     // Input validation
     if (!Number.isInteger(userId) || userId <= 0) {
       throw new Error('User ID must be a positive integer');
@@ -30,7 +37,7 @@ export class TodoListService {
 
     try {
       let sql: string;
-      
+
       if (includeTodoCount) {
         sql = `
           SELECT 
@@ -57,14 +64,16 @@ export class TodoListService {
       const rows = await this.db.all<TodoListRow>(sql, [userId]);
       return rows.map(this.mapRowToTodoList);
     } catch (error) {
-      throw new Error(`Failed to retrieve lists for user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to retrieve lists for user: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Create a new todo list for a user.
    * Validates list name uniqueness per user and enforces naming rules.
-   * 
+   *
    * Requirements: 2.1, 2.2, 2.3, 2.4
    */
   async createList(userId: number, name: string): Promise<TodoList> {
@@ -88,10 +97,9 @@ export class TodoListService {
 
     try {
       // Verify user exists
-      const user = await this.db.get(
-        'SELECT id FROM users WHERE id = ?',
-        [userId]
-      );
+      const user = await this.db.get('SELECT id FROM users WHERE id = ?', [
+        userId,
+      ]);
 
       if (!user) {
         throw new Error(`User with ID ${userId} not found`);
@@ -104,7 +112,9 @@ export class TodoListService {
       );
 
       if (existingList) {
-        throw new Error(`A list named "${trimmedName}" already exists for this user`);
+        throw new Error(
+          `A list named "${trimmedName}" already exists for this user`
+        );
       }
 
       // Create the new list
@@ -129,20 +139,31 @@ export class TodoListService {
 
       return this.mapRowToTodoList(createdList);
     } catch (error) {
-      if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
-        throw new Error(`A list named "${trimmedName}" already exists for this user`);
+      if (
+        error instanceof Error &&
+        error.message.includes('UNIQUE constraint failed')
+      ) {
+        throw new Error(
+          `A list named "${trimmedName}" already exists for this user`
+        );
       }
-      throw new Error(`Failed to create list: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create list: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Update a todo list's name.
    * Validates ownership, name uniqueness, and preserves all todos.
-   * 
+   *
    * Requirements: 3.1, 3.4
    */
-  async updateListName(listId: number, name: string, userId?: number): Promise<TodoList> {
+  async updateListName(
+    listId: number,
+    name: string,
+    userId?: number
+  ): Promise<TodoList> {
     // Input validation
     if (!Number.isInteger(listId) || listId <= 0) {
       throw new Error('List ID must be a positive integer');
@@ -184,7 +205,9 @@ export class TodoListService {
       );
 
       if (conflictingList) {
-        throw new Error(`A list named "${trimmedName}" already exists for this user`);
+        throw new Error(
+          `A list named "${trimmedName}" already exists for this user`
+        );
       }
 
       // Update the list name
@@ -209,17 +232,24 @@ export class TodoListService {
 
       return this.mapRowToTodoList(updatedList);
     } catch (error) {
-      if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
-        throw new Error(`A list named "${trimmedName}" already exists for this user`);
+      if (
+        error instanceof Error &&
+        error.message.includes('UNIQUE constraint failed')
+      ) {
+        throw new Error(
+          `A list named "${trimmedName}" already exists for this user`
+        );
       }
-      throw new Error(`Failed to update list name: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to update list name: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Delete a todo list and all associated todos.
    * Validates ownership and enforces minimum list requirement.
-   * 
+   *
    * Requirements: 3.2, 7.2, 7.3
    */
   async deleteList(listId: number, userId?: number): Promise<void> {
@@ -251,30 +281,36 @@ export class TodoListService {
       );
 
       if (userListCount && userListCount.count <= 1) {
-        throw new Error('Cannot delete the last remaining list. Users must have at least one list.');
+        throw new Error(
+          'Cannot delete the last remaining list. Users must have at least one list.'
+        );
       }
 
       // Delete the list (todos will be cascade deleted due to foreign key constraint)
-      const result = await this.db.run(
-        'DELETE FROM todo_lists WHERE id = ?',
-        [listId]
-      );
+      const result = await this.db.run('DELETE FROM todo_lists WHERE id = ?', [
+        listId,
+      ]);
 
       if (result.changes === 0) {
         throw new Error(`List with ID ${listId} not found`);
       }
     } catch (error) {
-      throw new Error(`Failed to delete list: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to delete list: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Validate that a user owns a specific list.
    * Used for authorization checks in API endpoints.
-   * 
+   *
    * Requirements: 1.3, 2.4, 3.3
    */
-  async validateListOwnership(listId: number, userId: number): Promise<boolean> {
+  async validateListOwnership(
+    listId: number,
+    userId: number
+  ): Promise<boolean> {
     // Input validation
     if (!Number.isInteger(listId) || listId <= 0) {
       throw new Error('List ID must be a positive integer');
@@ -292,13 +328,15 @@ export class TodoListService {
 
       return !!list;
     } catch (error) {
-      throw new Error(`Failed to validate list ownership: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to validate list ownership: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Get a specific todo list by ID with ownership validation.
-   * 
+   *
    * Requirements: 1.3, 2.4
    */
   async getListById(listId: number, userId?: number): Promise<TodoList | null> {
@@ -316,17 +354,21 @@ export class TodoListService {
         if (!Number.isInteger(userId) || userId <= 0) {
           throw new Error('User ID must be a positive integer');
         }
-        sql = 'SELECT id, name, user_id, created_at FROM todo_lists WHERE id = ? AND user_id = ?';
+        sql =
+          'SELECT id, name, user_id, created_at FROM todo_lists WHERE id = ? AND user_id = ?';
         params = [listId, userId];
       } else {
-        sql = 'SELECT id, name, user_id, created_at FROM todo_lists WHERE id = ?';
+        sql =
+          'SELECT id, name, user_id, created_at FROM todo_lists WHERE id = ?';
         params = [listId];
       }
 
       const list = await this.db.get<TodoListRow>(sql, params);
       return list ? this.mapRowToTodoList(list) : null;
     } catch (error) {
-      throw new Error(`Failed to get list by ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get list by ID: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -338,7 +380,7 @@ export class TodoListService {
       id: row.id,
       name: row.name,
       user_id: row.user_id,
-      created_at: new Date(row.created_at)
+      created_at: new Date(row.created_at),
     };
 
     // Include todo_count if it was selected

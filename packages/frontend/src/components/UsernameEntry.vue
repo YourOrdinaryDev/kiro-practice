@@ -3,7 +3,9 @@
     <div class="username-entry-container">
       <header class="entry-header">
         <h1>Welcome to Todo App</h1>
-        <p class="entry-subtitle">Enter your username to access your personal todo list</p>
+        <p class="entry-subtitle">
+          Enter your username to access your personal todo list
+        </p>
       </header>
 
       <form @submit.prevent="handleSubmit" class="username-form">
@@ -55,7 +57,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   onUsernameSubmit: undefined,
-  error: undefined
+  error: undefined,
 });
 
 // Emits
@@ -120,10 +122,10 @@ const clearError = (): void => {
  */
 const handleSubmit = async (): Promise<void> => {
   const trimmedUsername = username.value.trim();
-  
+
   // Clear any previous errors
   validationError.value = null;
-  
+
   // Validate username
   const validationResult = validateUsername(username.value);
   if (validationResult) {
@@ -136,17 +138,18 @@ const handleSubmit = async (): Promise<void> => {
   try {
     // Use SessionManager to establish session
     sessionManager.setUsername(trimmedUsername);
-    
+
     // Emit success event
     emit('usernameSubmit', trimmedUsername);
-    
+
     // Call prop callback if provided
     if (props.onUsernameSubmit) {
       props.onUsernameSubmit(trimmedUsername);
     }
   } catch (error) {
     // Handle session creation errors
-    const errorMsg = error instanceof Error ? error.message : 'Failed to create session';
+    const errorMsg =
+      error instanceof Error ? error.message : 'Failed to create session';
     validationError.value = errorMsg;
     emit('error', errorMsg);
   } finally {
@@ -163,7 +166,8 @@ const handleSubmit = async (): Promise<void> => {
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .username-entry-container {
@@ -217,7 +221,9 @@ const handleSubmit = async (): Promise<void> => {
   border: 2px solid #e1e8ed;
   border-radius: 8px;
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   background: white;
 }
 
@@ -271,7 +277,9 @@ const handleSubmit = async (): Promise<void> => {
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -308,8 +316,12 @@ const handleSubmit = async (): Promise<void> => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive design */
@@ -317,11 +329,11 @@ const handleSubmit = async (): Promise<void> => {
   .username-entry {
     padding: 10px;
   }
-  
+
   .username-entry-container {
     padding: 30px 20px;
   }
-  
+
   .entry-header h1 {
     font-size: 1.75rem;
   }

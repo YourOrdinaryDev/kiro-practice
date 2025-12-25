@@ -14,7 +14,7 @@
       <!-- Summary -->
       <div class="todo-summary">
         <p class="summary-text">
-          {{ completedCount }} of {{ todos.length }} 
+          {{ completedCount }} of {{ todos.length }}
           {{ todos.length === 1 ? 'task' : 'tasks' }} completed
         </p>
       </div>
@@ -38,7 +38,10 @@
         </div>
 
         <!-- Completed todos -->
-        <div v-if="completedTodos.length > 0" class="todo-section completed-section">
+        <div
+          v-if="completedTodos.length > 0"
+          class="todo-section completed-section"
+        >
           <h4 class="section-title">
             Completed Tasks ({{ completedTodos.length }})
           </h4>
@@ -83,10 +86,12 @@ const emit = defineEmits<Emits>();
  */
 const incompleteTodos = computed((): Todo[] => {
   return props.todos
-    .filter(todo => !todo.completed)
+    .filter((todo) => !todo.completed)
     .sort((a, b) => {
-      const dateA = a.created_at instanceof Date ? a.created_at : new Date(a.created_at);
-      const dateB = b.created_at instanceof Date ? b.created_at : new Date(b.created_at);
+      const dateA =
+        a.created_at instanceof Date ? a.created_at : new Date(a.created_at);
+      const dateB =
+        b.created_at instanceof Date ? b.created_at : new Date(b.created_at);
       return dateB.getTime() - dateA.getTime();
     });
 });
@@ -97,10 +102,12 @@ const incompleteTodos = computed((): Todo[] => {
  */
 const completedTodos = computed((): Todo[] => {
   return props.todos
-    .filter(todo => todo.completed)
+    .filter((todo) => todo.completed)
     .sort((a, b) => {
-      const dateA = a.created_at instanceof Date ? a.created_at : new Date(a.created_at);
-      const dateB = b.created_at instanceof Date ? b.created_at : new Date(b.created_at);
+      const dateA =
+        a.created_at instanceof Date ? a.created_at : new Date(a.created_at);
+      const dateB =
+        b.created_at instanceof Date ? b.created_at : new Date(b.created_at);
       return dateB.getTime() - dateA.getTime();
     });
 });
@@ -110,7 +117,7 @@ const completedTodos = computed((): Todo[] => {
  * Implements Requirements 2.1, 2.2 - Display completion status
  */
 const completedCount = computed((): number => {
-  return props.todos.filter(todo => todo.completed).length;
+  return props.todos.filter((todo) => todo.completed).length;
 });
 
 /**
@@ -223,19 +230,19 @@ const handleDelete = (id: number): void => {
   .empty-state {
     padding: 40px 20px;
   }
-  
+
   .empty-icon {
     font-size: 3rem;
   }
-  
+
   .empty-title {
     font-size: 1.25rem;
   }
-  
+
   .todo-summary {
     padding: 16px 20px;
   }
-  
+
   .section-title {
     padding: 12px 20px 8px 20px;
     font-size: 0.85rem;

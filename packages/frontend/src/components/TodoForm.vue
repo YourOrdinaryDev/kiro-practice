@@ -1,9 +1,7 @@
 <template>
   <form @submit.prevent="handleSubmit" class="todo-form">
     <div class="form-group">
-      <label for="todo-input" class="form-label">
-        Add a new todo
-      </label>
+      <label for="todo-input" class="form-label"> Add a new todo </label>
       <div class="input-group">
         <input
           id="todo-input"
@@ -25,14 +23,17 @@
           {{ submitting ? 'Adding...' : 'Add Todo' }}
         </button>
       </div>
-      
+
       <!-- Validation error message -->
       <div v-if="validationError" class="validation-error">
         {{ validationError }}
       </div>
-      
+
       <!-- Character count -->
-      <div class="character-count" :class="{ 'count-warning': text.length > 450 }">
+      <div
+        class="character-count"
+        :class="{ 'count-warning': text.length > 450 }"
+      >
         {{ text.length }}/500 characters
       </div>
     </div>
@@ -80,17 +81,17 @@ const isValidInput = computed((): boolean => {
  */
 const validateInput = (): boolean => {
   const trimmedText = text.value.trim();
-  
+
   if (trimmedText.length === 0) {
     validationError.value = 'Todo description cannot be empty';
     return false;
   }
-  
+
   if (trimmedText.length > 500) {
     validationError.value = 'Todo description cannot exceed 500 characters';
     return false;
   }
-  
+
   validationError.value = '';
   return true;
 };
@@ -112,17 +113,17 @@ const handleSubmit = async (): Promise<void> => {
   if (!validateInput()) {
     return;
   }
-  
+
   const trimmedText = text.value.trim();
-  
+
   try {
     // Emit the submit event to parent component
     emit('submit', trimmedText);
-    
+
     // Clear the form after successful submission
     text.value = '';
     validationError.value = '';
-    
+
     // Focus the input field for next entry
     await nextTick();
     inputRef.value?.focus();
@@ -166,7 +167,9 @@ const handleSubmit = async (): Promise<void> => {
   border: 2px solid #e1e5e9;
   border-radius: 8px;
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   background: white;
 }
 
@@ -200,7 +203,9 @@ const handleSubmit = async (): Promise<void> => {
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
   white-space: nowrap;
 }
 
@@ -246,7 +251,7 @@ const handleSubmit = async (): Promise<void> => {
   .input-group {
     flex-direction: column;
   }
-  
+
   .submit-button {
     width: 100%;
   }

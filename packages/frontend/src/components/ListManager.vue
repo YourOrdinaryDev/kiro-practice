@@ -38,11 +38,7 @@
     <div v-if="lists.length > 0" class="manage-section">
       <h3>Your Lists</h3>
       <div class="lists-grid">
-        <div
-          v-for="list in lists"
-          :key="list.id"
-          class="list-card"
-        >
+        <div v-for="list in lists" :key="list.id" class="list-card">
           <div class="list-header">
             <div v-if="editingListId === list.id" class="edit-form">
               <input
@@ -75,7 +71,8 @@
             <div v-else class="list-display">
               <h4 class="list-title">{{ list.name }}</h4>
               <span class="todo-count">
-                {{ list.todo_count || 0 }} {{ (list.todo_count || 0) === 1 ? 'todo' : 'todos' }}
+                {{ list.todo_count || 0 }}
+                {{ (list.todo_count || 0) === 1 ? 'todo' : 'todos' }}
               </span>
             </div>
           </div>
@@ -114,16 +111,18 @@
       <div class="confirmation-dialog" @click.stop>
         <h3>Delete List</h3>
         <p>
-          Are you sure you want to delete "<strong>{{ listToDelete?.name }}</strong>"?
+          Are you sure you want to delete "<strong>{{
+            listToDelete?.name
+          }}</strong
+          >"?
         </p>
         <p class="warning-text">
-          This will permanently delete the list and all {{ listToDelete?.todo_count || 0 }} todos in it.
-          This action cannot be undone.
+          This will permanently delete the list and all
+          {{ listToDelete?.todo_count || 0 }} todos in it. This action cannot be
+          undone.
         </p>
         <div class="dialog-actions">
-          <button @click="cancelDelete" class="cancel-button">
-            Cancel
-          </button>
+          <button @click="cancelDelete" class="cancel-button">Cancel</button>
           <button @click="confirmDelete" class="delete-confirm-button">
             Delete List
           </button>
@@ -144,7 +143,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  loading: false
+  loading: false,
 });
 
 // Emits
@@ -170,7 +169,7 @@ const deleting = ref<number | null>(null);
 
 // Computed properties
 const canDeleteList = computed(() => {
-  return (list: TodoList) => {
+  return (_list: TodoList) => {
     // Requirement 7.2, 7.3: Cannot delete last remaining list
     return props.lists.length > 1;
   };
@@ -194,11 +193,12 @@ const validateListName = (name: string): string | null => {
 
   // Check for duplicate names (Requirement 2.2, 3.4)
   const trimmedName = name.trim();
-  const existingList = props.lists.find(list => 
-    list.name.toLowerCase() === trimmedName.toLowerCase() && 
-    list.id !== editingListId.value
+  const existingList = props.lists.find(
+    (list) =>
+      list.name.toLowerCase() === trimmedName.toLowerCase() &&
+      list.id !== editingListId.value
   );
-  
+
   if (existingList) {
     return 'A list with this name already exists';
   }
@@ -226,7 +226,7 @@ const clearEditError = (): void => {
  */
 const handleCreateList = async (): Promise<void> => {
   const trimmedName = newListName.value.trim();
-  
+
   // Validate list name
   const validationError = validateListName(trimmedName);
   if (validationError) {
@@ -241,7 +241,8 @@ const handleCreateList = async (): Promise<void> => {
     emit('createList', trimmedName);
     newListName.value = '';
   } catch (error) {
-    createError.value = error instanceof Error ? error.message : 'Failed to create list';
+    createError.value =
+      error instanceof Error ? error.message : 'Failed to create list';
   } finally {
     creating.value = false;
   }
@@ -272,7 +273,7 @@ const cancelEdit = (): void => {
  */
 const handleSaveEdit = async (listId: number): Promise<void> => {
   const trimmedName = editListName.value.trim();
-  
+
   // Validate list name
   const validationError = validateListName(trimmedName);
   if (validationError) {
@@ -287,7 +288,8 @@ const handleSaveEdit = async (listId: number): Promise<void> => {
     emit('updateList', listId, trimmedName);
     cancelEdit();
   } catch (error) {
-    editError.value = error instanceof Error ? error.message : 'Failed to update list';
+    editError.value =
+      error instanceof Error ? error.message : 'Failed to update list';
   } finally {
     updating.value = false;
   }
@@ -575,8 +577,12 @@ const confirmDelete = async (): Promise<void> => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Modal styles */
@@ -650,21 +656,21 @@ const confirmDelete = async (): Promise<void> => {
   .form-group {
     flex-direction: column;
   }
-  
+
   .create-button {
     align-self: flex-start;
   }
-  
+
   .list-display {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
-  
+
   .list-actions {
     flex-wrap: wrap;
   }
-  
+
   .confirmation-dialog {
     margin: 20px;
   }

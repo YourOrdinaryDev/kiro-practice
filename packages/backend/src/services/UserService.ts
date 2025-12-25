@@ -24,7 +24,7 @@ export class UserService {
   /**
    * Get an existing user by username or create a new one if it doesn't exist.
    * This method handles session management by ensuring users always have a valid identity.
-   * 
+   *
    * Requirements: 1.2, 1.4
    */
   async getOrCreateUser(username: string): Promise<User> {
@@ -78,26 +78,31 @@ export class UserService {
 
       return this.mapRowToUser(createdUser);
     } catch (error) {
-      if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('UNIQUE constraint failed')
+      ) {
         // Handle race condition where user was created between our check and insert
         const existingUser = await this.db.get<UserRow>(
           'SELECT id, username, created_at FROM users WHERE username = ?',
           [trimmedUsername]
         );
-        
+
         if (existingUser) {
           return this.mapRowToUser(existingUser);
         }
       }
-      
-      throw new Error(`Failed to get or create user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+      throw new Error(
+        `Failed to get or create user: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Create a default "My Tasks" list for a new user.
    * This ensures every user has at least one list to work with immediately.
-   * 
+   *
    * Requirements: 7.1
    */
   async createDefaultList(userId: number): Promise<TodoList> {
@@ -110,10 +115,9 @@ export class UserService {
 
     try {
       // Check if user exists
-      const user = await this.db.get(
-        'SELECT id FROM users WHERE id = ?',
-        [userId]
-      );
+      const user = await this.db.get('SELECT id FROM users WHERE id = ?', [
+        userId,
+      ]);
 
       if (!user) {
         throw new Error(`User with ID ${userId} not found`);
@@ -151,19 +155,24 @@ export class UserService {
 
       return this.mapRowToTodoList(createdList);
     } catch (error) {
-      if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('UNIQUE constraint failed')
+      ) {
         // Handle race condition where list was created between our check and insert
         const existingList = await this.db.get<TodoListRow>(
           'SELECT id, name, user_id, created_at FROM todo_lists WHERE user_id = ? AND name = ?',
           [userId, defaultListName]
         );
-        
+
         if (existingList) {
           return this.mapRowToTodoList(existingList);
         }
       }
-      
-      throw new Error(`Failed to create default list: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+      throw new Error(
+        `Failed to create default list: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -183,7 +192,9 @@ export class UserService {
 
       return user ? this.mapRowToUser(user) : null;
     } catch (error) {
-      throw new Error(`Failed to get user by ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get user by ID: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -203,7 +214,9 @@ export class UserService {
 
       return user ? this.mapRowToUser(user) : null;
     } catch (error) {
-      throw new Error(`Failed to get user by username: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get user by username: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -214,7 +227,7 @@ export class UserService {
     return {
       id: row.id,
       username: row.username,
-      created_at: new Date(row.created_at)
+      created_at: new Date(row.created_at),
     };
   }
 
@@ -226,7 +239,7 @@ export class UserService {
       id: row.id,
       name: row.name,
       user_id: row.user_id,
-      created_at: new Date(row.created_at)
+      created_at: new Date(row.created_at),
     };
   }
 }

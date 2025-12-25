@@ -49,7 +49,7 @@ export class DatabaseConnection {
   async run(sql: string, params: any[] = []): Promise<sqlite3.RunResult> {
     const db = this.getDatabase();
     return new Promise((resolve, reject) => {
-      db.run(sql, params, function(err) {
+      db.run(sql, params, function (err) {
         if (err) {
           reject(err);
         } else {

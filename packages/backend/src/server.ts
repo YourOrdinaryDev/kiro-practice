@@ -3,8 +3,18 @@ import { initializeDatabase, closeDatabase } from './database/index.js';
 import { TodoService } from './services/TodoService.js';
 import { UserService } from './services/UserService.js';
 import { TodoListService } from './services/TodoListService.js';
-import { sessionMiddleware, extractUsername } from './middleware/sessionMiddleware.js';
-import type { ApiError, ApiResponse, User, TodoList, CreateTodoListRequest, UpdateTodoListRequest, MoveTodoRequest, Todo } from './types/todo.js';
+import {
+  sessionMiddleware,
+  extractUsername,
+} from './middleware/sessionMiddleware.js';
+import type {
+  ApiError,
+  ApiResponse,
+  CreateTodoListRequest,
+  UpdateTodoListRequest,
+  MoveTodoRequest,
+  Todo,
+} from './types/todo.js';
 
 const fastify = Fastify({
   logger: true,
@@ -122,7 +132,7 @@ await fastify.register(import('@fastify/cors'), {
 // Global error handler
 fastify.setErrorHandler(async (error, request, reply) => {
   const { log } = fastify;
-  
+
   // Log the error for debugging
   log.error(error);
 
@@ -140,7 +150,10 @@ fastify.setErrorHandler(async (error, request, reply) => {
   }
 
   // Handle authentication errors (username validation failures)
-  if (error.message && error.message.includes('Username not found in request')) {
+  if (
+    error.message &&
+    error.message.includes('Username not found in request')
+  ) {
     const errorResponse: ApiError = {
       success: false,
       error: {
@@ -152,13 +165,14 @@ fastify.setErrorHandler(async (error, request, reply) => {
   }
 
   // Handle service-level validation errors (like whitespace-only text)
-  if (error.message && (
-    error.message.includes('cannot be empty') ||
-    error.message.includes('whitespace') ||
-    error.message.includes('is required') ||
-    error.message.includes('cannot exceed') ||
-    error.message.includes('not found')
-  )) {
+  if (
+    error.message &&
+    (error.message.includes('cannot be empty') ||
+      error.message.includes('whitespace') ||
+      error.message.includes('is required') ||
+      error.message.includes('cannot exceed') ||
+      error.message.includes('not found'))
+  ) {
     const errorResponse: ApiError = {
       success: false,
       error: {
@@ -229,376 +243,421 @@ fastify.get('/api/hello', async () => {
 // User management endpoints
 
 // GET /api/users/:username - Get or create user by username
-fastify.get('/api/users/:username', {
-  schema: {
-    params: {
-      type: 'object',
-      properties: {
-        username: { type: 'string', minLength: 1, maxLength: 50 }
-      },
-      required: ['username']
-    },
-    response: {
-      200: {
+fastify.get(
+  '/api/users/:username',
+  {
+    schema: {
+      params: {
         type: 'object',
         properties: {
-          data: { $ref: 'user#' },
-          success: { type: 'boolean', const: true }
+          username: { type: 'string', minLength: 1, maxLength: 50 },
         },
-        required: ['data', 'success']
-      }
+        required: ['username'],
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            data: { $ref: 'user#' },
+            success: { type: 'boolean', const: true },
+          },
+          required: ['data', 'success'],
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const { username } = request.params as { username: string };
+      const user = await userService.getOrCreateUser(username);
+      const response: ApiResponse<typeof user> = {
+        data: user,
+        success: true,
+      };
+      return reply.status(200).send(response);
+    } catch (error) {
+      throw error;
     }
   }
-}, async (request, reply) => {
-  try {
-    const { username } = request.params as { username: string };
-    const user = await userService.getOrCreateUser(username);
-    const response: ApiResponse<typeof user> = {
-      data: user,
-      success: true
-    };
-    return reply.status(200).send(response);
-  } catch (error) {
-    throw error;
-  }
-});
+);
 
 // POST /api/users - Create a new user
-fastify.post('/api/users', {
-  schema: {
-    body: { $ref: 'createUserRequest#' },
-    response: {
-      201: {
-        type: 'object',
-        properties: {
-          data: { $ref: 'user#' },
-          success: { type: 'boolean', const: true }
+fastify.post(
+  '/api/users',
+  {
+    schema: {
+      body: { $ref: 'createUserRequest#' },
+      response: {
+        201: {
+          type: 'object',
+          properties: {
+            data: { $ref: 'user#' },
+            success: { type: 'boolean', const: true },
+          },
+          required: ['data', 'success'],
         },
-        required: ['data', 'success']
-      }
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const { username } = request.body as { username: string };
+      const user = await userService.getOrCreateUser(username);
+      const response: ApiResponse<typeof user> = {
+        data: user,
+        success: true,
+      };
+      return reply.status(201).send(response);
+    } catch (error) {
+      throw error;
     }
   }
-}, async (request, reply) => {
-  try {
-    const { username } = request.body as { username: string };
-    const user = await userService.getOrCreateUser(username);
-    const response: ApiResponse<typeof user> = {
-      data: user,
-      success: true
-    };
-    return reply.status(201).send(response);
-  } catch (error) {
-    throw error;
-  }
-});
+);
 
 // List management endpoints
 
 // GET /api/users/:userId/lists - Get all lists for a user
-fastify.get('/api/users/:userId/lists', {
-  schema: {
-    params: {
-      type: 'object',
-      properties: {
-        userId: { type: 'integer', minimum: 1 }
-      },
-      required: ['userId']
-    },
-    querystring: {
-      type: 'object',
-      properties: {
-        includeTodoCount: { type: 'boolean' }
-      }
-    },
-    response: {
-      200: {
+fastify.get(
+  '/api/users/:userId/lists',
+  {
+    schema: {
+      params: {
         type: 'object',
         properties: {
-          data: {
-            type: 'array',
-            items: { $ref: 'todoList#' }
-          },
-          success: { type: 'boolean', const: true }
+          userId: { type: 'integer', minimum: 1 },
         },
-        required: ['data', 'success']
-      }
-    }
-  }
-}, async (request, reply) => {
-  try {
-    const { userId } = request.params as { userId: number };
-    const { includeTodoCount } = request.query as { includeTodoCount?: boolean };
-    
-    // Verify user exists
-    const user = await userService.getUserById(userId);
-    if (!user) {
-      throw new Error(`User with ID ${userId} not found`);
-    }
+        required: ['userId'],
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          includeTodoCount: { type: 'boolean' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'array',
+              items: { $ref: 'todoList#' },
+            },
+            success: { type: 'boolean', const: true },
+          },
+          required: ['data', 'success'],
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const { userId } = request.params as { userId: number };
+      const { includeTodoCount } = request.query as {
+        includeTodoCount?: boolean;
+      };
 
-    const lists = await todoListService.getListsForUser(userId, includeTodoCount || false);
-    const response: ApiResponse<typeof lists> = {
-      data: lists,
-      success: true
-    };
-    return reply.status(200).send(response);
-  } catch (error) {
-    throw error;
+      // Verify user exists
+      const user = await userService.getUserById(userId);
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+
+      const lists = await todoListService.getListsForUser(
+        userId,
+        includeTodoCount || false
+      );
+      const response: ApiResponse<typeof lists> = {
+        data: lists,
+        success: true,
+      };
+      return reply.status(200).send(response);
+    } catch (error) {
+      throw error;
+    }
   }
-});
+);
 
 // POST /api/users/:userId/lists - Create a new list for a user
-fastify.post('/api/users/:userId/lists', {
-  schema: {
-    params: {
-      type: 'object',
-      properties: {
-        userId: { type: 'integer', minimum: 1 }
-      },
-      required: ['userId']
-    },
-    body: { $ref: 'createTodoListRequest#' },
-    response: {
-      201: {
+fastify.post(
+  '/api/users/:userId/lists',
+  {
+    schema: {
+      params: {
         type: 'object',
         properties: {
-          data: { $ref: 'todoList#' },
-          success: { type: 'boolean', const: true }
+          userId: { type: 'integer', minimum: 1 },
         },
-        required: ['data', 'success']
-      }
-    }
-  }
-}, async (request, reply) => {
-  try {
-    const { userId } = request.params as { userId: number };
-    const { name } = request.body as CreateTodoListRequest;
-    
-    // Verify user exists
-    const user = await userService.getUserById(userId);
-    if (!user) {
-      throw new Error(`User with ID ${userId} not found`);
-    }
+        required: ['userId'],
+      },
+      body: { $ref: 'createTodoListRequest#' },
+      response: {
+        201: {
+          type: 'object',
+          properties: {
+            data: { $ref: 'todoList#' },
+            success: { type: 'boolean', const: true },
+          },
+          required: ['data', 'success'],
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const { userId } = request.params as { userId: number };
+      const { name } = request.body as CreateTodoListRequest;
 
-    const list = await todoListService.createList(userId, name);
-    const response: ApiResponse<typeof list> = {
-      data: list,
-      success: true
-    };
-    return reply.status(201).send(response);
-  } catch (error) {
-    throw error;
+      // Verify user exists
+      const user = await userService.getUserById(userId);
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+
+      const list = await todoListService.createList(userId, name);
+      const response: ApiResponse<typeof list> = {
+        data: list,
+        success: true,
+      };
+      return reply.status(201).send(response);
+    } catch (error) {
+      throw error;
+    }
   }
-});
+);
 
 // PUT /api/lists/:listId - Update list name
-fastify.put('/api/lists/:listId', {
-  schema: {
-    params: {
-      type: 'object',
-      properties: {
-        listId: { type: 'integer', minimum: 1 }
-      },
-      required: ['listId']
-    },
-    body: { $ref: 'updateTodoListRequest#' },
-    response: {
-      200: {
+fastify.put(
+  '/api/lists/:listId',
+  {
+    schema: {
+      params: {
         type: 'object',
         properties: {
-          data: { $ref: 'todoList#' },
-          success: { type: 'boolean', const: true }
+          listId: { type: 'integer', minimum: 1 },
         },
-        required: ['data', 'success']
-      }
+        required: ['listId'],
+      },
+      body: { $ref: 'updateTodoListRequest#' },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            data: { $ref: 'todoList#' },
+            success: { type: 'boolean', const: true },
+          },
+          required: ['data', 'success'],
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const { listId } = request.params as { listId: number };
+      const { name } = request.body as UpdateTodoListRequest;
+
+      const list = await todoListService.updateListName(listId, name);
+      const response: ApiResponse<typeof list> = {
+        data: list,
+        success: true,
+      };
+      return reply.status(200).send(response);
+    } catch (error) {
+      throw error;
     }
   }
-}, async (request, reply) => {
-  try {
-    const { listId } = request.params as { listId: number };
-    const { name } = request.body as UpdateTodoListRequest;
-    
-    const list = await todoListService.updateListName(listId, name);
-    const response: ApiResponse<typeof list> = {
-      data: list,
-      success: true
-    };
-    return reply.status(200).send(response);
-  } catch (error) {
-    throw error;
-  }
-});
+);
 
 // DELETE /api/lists/:listId - Delete a list
-fastify.delete('/api/lists/:listId', {
-  schema: {
-    params: {
-      type: 'object',
-      properties: {
-        listId: { type: 'integer', minimum: 1 }
-      },
-      required: ['listId']
-    },
-    response: {
-      204: {
+fastify.delete(
+  '/api/lists/:listId',
+  {
+    schema: {
+      params: {
         type: 'object',
         properties: {
-          success: { type: 'boolean', const: true }
+          listId: { type: 'integer', minimum: 1 },
         },
-        required: ['success']
-      }
+        required: ['listId'],
+      },
+      response: {
+        204: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', const: true },
+          },
+          required: ['success'],
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const { listId } = request.params as { listId: number };
+
+      await todoListService.deleteList(listId);
+      const response = {
+        success: true,
+      };
+      return reply.status(204).send(response);
+    } catch (error) {
+      throw error;
     }
   }
-}, async (request, reply) => {
-  try {
-    const { listId } = request.params as { listId: number };
-    
-    await todoListService.deleteList(listId);
-    const response = {
-      success: true
-    };
-    return reply.status(204).send(response);
-  } catch (error) {
-    throw error;
-  }
-});
+);
 
 // List-based todo endpoints
 
 // GET /api/lists/:listId/todos - Get todos in a specific list
-fastify.get('/api/lists/:listId/todos', {
-  schema: {
-    params: {
-      type: 'object',
-      properties: {
-        listId: { type: 'integer', minimum: 1 }
-      },
-      required: ['listId']
-    },
-    response: {
-      200: {
+fastify.get(
+  '/api/lists/:listId/todos',
+  {
+    schema: {
+      params: {
         type: 'object',
         properties: {
-          data: {
-            type: 'array',
-            items: { $ref: 'todo#' }
-          },
-          success: { type: 'boolean', const: true }
+          listId: { type: 'integer', minimum: 1 },
         },
-        required: ['data', 'success']
-      }
-    }
-  }
-}, async (request, reply) => {
-  try {
-    const { listId } = request.params as { listId: number };
-    
-    // Verify list exists
-    const list = await todoListService.getListById(listId);
-    if (!list) {
-      throw new Error(`List with ID ${listId} not found`);
-    }
+        required: ['listId'],
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'array',
+              items: { $ref: 'todo#' },
+            },
+            success: { type: 'boolean', const: true },
+          },
+          required: ['data', 'success'],
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const { listId } = request.params as { listId: number };
 
-    const todos = await todoService.getTodosInList(listId);
-    const response: ApiResponse<typeof todos> = {
-      data: todos,
-      success: true
-    };
-    return reply.status(200).send(response);
-  } catch (error) {
-    throw error;
+      // Verify list exists
+      const list = await todoListService.getListById(listId);
+      if (!list) {
+        throw new Error(`List with ID ${listId} not found`);
+      }
+
+      const todos = await todoService.getTodosInList(listId);
+      const response: ApiResponse<typeof todos> = {
+        data: todos,
+        success: true,
+      };
+      return reply.status(200).send(response);
+    } catch (error) {
+      throw error;
+    }
   }
-});
+);
 
 // POST /api/lists/:listId/todos - Create a new todo in a specific list
-fastify.post('/api/lists/:listId/todos', {
-  schema: {
-    params: {
-      type: 'object',
-      properties: {
-        listId: { type: 'integer', minimum: 1 }
-      },
-      required: ['listId']
-    },
-    body: { $ref: 'createTodoRequest#' },
-    response: {
-      201: {
+fastify.post(
+  '/api/lists/:listId/todos',
+  {
+    schema: {
+      params: {
         type: 'object',
         properties: {
-          data: { $ref: 'todo#' },
-          success: { type: 'boolean', const: true }
+          listId: { type: 'integer', minimum: 1 },
         },
-        required: ['data', 'success']
-      }
-    }
-  }
-}, async (request, reply) => {
-  try {
-    const { listId } = request.params as { listId: number };
-    const { text } = request.body as { text: string };
-    
-    // Verify list exists
-    const list = await todoListService.getListById(listId);
-    if (!list) {
-      throw new Error(`List with ID ${listId} not found`);
-    }
+        required: ['listId'],
+      },
+      body: { $ref: 'createTodoRequest#' },
+      response: {
+        201: {
+          type: 'object',
+          properties: {
+            data: { $ref: 'todo#' },
+            success: { type: 'boolean', const: true },
+          },
+          required: ['data', 'success'],
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const { listId } = request.params as { listId: number };
+      const { text } = request.body as { text: string };
 
-    const todo = await todoService.createTodoInList(listId, text);
-    const response: ApiResponse<typeof todo> = {
-      data: todo,
-      success: true
-    };
-    return reply.status(201).send(response);
-  } catch (error) {
-    throw error;
+      // Verify list exists
+      const list = await todoListService.getListById(listId);
+      if (!list) {
+        throw new Error(`List with ID ${listId} not found`);
+      }
+
+      const todo = await todoService.createTodoInList(listId, text);
+      const response: ApiResponse<typeof todo> = {
+        data: todo,
+        success: true,
+      };
+      return reply.status(201).send(response);
+    } catch (error) {
+      throw error;
+    }
   }
-});
+);
 
 // PUT /api/todos/:todoId/move - Move a todo to a different list
-fastify.put('/api/todos/:todoId/move', {
-  preHandler: sessionMiddleware,
-  schema: {
-    params: {
-      type: 'object',
-      properties: {
-        todoId: { type: 'integer', minimum: 1 }
-      },
-      required: ['todoId']
-    },
-    body: { $ref: 'moveTodoRequest#' },
-    response: {
-      200: {
+fastify.put(
+  '/api/todos/:todoId/move',
+  {
+    preHandler: sessionMiddleware,
+    schema: {
+      params: {
         type: 'object',
         properties: {
-          data: { $ref: 'todo#' },
-          success: { type: 'boolean', const: true }
+          todoId: { type: 'integer', minimum: 1 },
         },
-        required: ['data', 'success']
-      }
-    }
-  }
-}, async (request, reply) => {
-  try {
-    const { todoId } = request.params as { todoId: number };
-    const { target_list_id } = request.body as MoveTodoRequest;
-    
-    // For now, we'll need to extract user ID from session middleware
-    // This is a simplified approach - in a real app you'd have proper auth
-    const username = extractUsername(request);
-    const user = await userService.getUserByUsername(username);
-    if (!user) {
-      throw new Error('User not found');
-    }
+        required: ['todoId'],
+      },
+      body: { $ref: 'moveTodoRequest#' },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            data: { $ref: 'todo#' },
+            success: { type: 'boolean', const: true },
+          },
+          required: ['data', 'success'],
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const { todoId } = request.params as { todoId: number };
+      const { target_list_id } = request.body as MoveTodoRequest;
 
-    const todo = await todoService.moveTodoToList(todoId, target_list_id, user.id);
-    const response: ApiResponse<typeof todo> = {
-      data: todo,
-      success: true
-    };
-    return reply.status(200).send(response);
-  } catch (error) {
-    throw error;
+      // For now, we'll need to extract user ID from session middleware
+      // This is a simplified approach - in a real app you'd have proper auth
+      const username = extractUsername(request);
+      const user = await userService.getUserByUsername(username);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const todo = await todoService.moveTodoToList(
+        todoId,
+        target_list_id,
+        user.id
+      );
+      const response: ApiResponse<typeof todo> = {
+        data: todo,
+        success: true,
+      };
+      return reply.status(200).send(response);
+    } catch (error) {
+      throw error;
+    }
   }
-});
+);
 
 // Initialize services
 const todoService = new TodoService();
@@ -606,161 +665,179 @@ const userService = new UserService();
 const todoListService = new TodoListService();
 
 // GET /api/todos - Retrieve all todos
-fastify.get('/api/todos', {
-  preHandler: sessionMiddleware,
-  schema: {
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          data: {
-            type: 'array',
-            items: { $ref: 'todo#' }
+fastify.get(
+  '/api/todos',
+  {
+    preHandler: sessionMiddleware,
+    schema: {
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'array',
+              items: { $ref: 'todo#' },
+            },
+            success: { type: 'boolean', const: true },
           },
-          success: { type: 'boolean', const: true }
+          required: ['data', 'success'],
         },
-        required: ['data', 'success']
-      }
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const username = extractUsername(request);
+      const todos = await todoService.getAllTodos(username);
+      const response: ApiResponse<typeof todos> = {
+        data: todos,
+        success: true,
+      };
+      return reply.status(200).send(response);
+    } catch (error) {
+      // Let the global error handler deal with this
+      throw error;
     }
   }
-}, async (request, reply) => {
-  try {
-    const username = extractUsername(request);
-    const todos = await todoService.getAllTodos(username);
-    const response: ApiResponse<typeof todos> = {
-      data: todos,
-      success: true
-    };
-    return reply.status(200).send(response);
-  } catch (error) {
-    // Let the global error handler deal with this
-    throw error;
-  }
-});
+);
 
 // POST /api/todos - Create a new todo
-fastify.post('/api/todos', {
-  preHandler: sessionMiddleware,
-  schema: {
-    body: { $ref: 'createTodoRequest#' },
-    response: {
-      201: {
-        type: 'object',
-        properties: {
-          data: { $ref: 'todo#' },
-          success: { type: 'boolean', const: true }
+fastify.post(
+  '/api/todos',
+  {
+    preHandler: sessionMiddleware,
+    schema: {
+      body: { $ref: 'createTodoRequest#' },
+      response: {
+        201: {
+          type: 'object',
+          properties: {
+            data: { $ref: 'todo#' },
+            success: { type: 'boolean', const: true },
+          },
+          required: ['data', 'success'],
         },
-        required: ['data', 'success']
-      }
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const username = extractUsername(request);
+      const { text } = request.body as { text: string };
+      const todo = await todoService.createTodo(username, { text });
+      const response: ApiResponse<typeof todo> = {
+        data: todo,
+        success: true,
+      };
+      return reply.status(201).send(response);
+    } catch (error) {
+      // Let the global error handler deal with this
+      throw error;
     }
   }
-}, async (request, reply) => {
-  try {
-    const username = extractUsername(request);
-    const { text } = request.body as { text: string };
-    const todo = await todoService.createTodo(username, { text });
-    const response: ApiResponse<typeof todo> = {
-      data: todo,
-      success: true
-    };
-    return reply.status(201).send(response);
-  } catch (error) {
-    // Let the global error handler deal with this
-    throw error;
-  }
-});
+);
 
 // PUT /api/todos/:id - Update todo completion status
-fastify.put('/api/todos/:id', {
-  preHandler: sessionMiddleware,
-  schema: {
-    params: {
-      type: 'object',
-      properties: {
-        id: { type: 'integer', minimum: 1 }
-      },
-      required: ['id']
-    },
-    body: {
-      type: 'object',
-      properties: {
-        completed: { type: 'boolean' },
-      },
-      required: ['completed'],
-    },
-    response: {
-      200: {
+fastify.put(
+  '/api/todos/:id',
+  {
+    preHandler: sessionMiddleware,
+    schema: {
+      params: {
         type: 'object',
         properties: {
-          data: { $ref: 'todo#' },
-          success: { type: 'boolean', const: true }
+          id: { type: 'integer', minimum: 1 },
         },
-        required: ['data', 'success']
-      }
+        required: ['id'],
+      },
+      body: {
+        type: 'object',
+        properties: {
+          completed: { type: 'boolean' },
+        },
+        required: ['completed'],
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            data: { $ref: 'todo#' },
+            success: { type: 'boolean', const: true },
+          },
+          required: ['data', 'success'],
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const username = extractUsername(request);
+      const { id } = request.params as { id: number };
+      const { completed } = request.body as { completed: boolean };
+      const legacyTodo = await todoService.updateTodo(username, id, {
+        completed,
+      });
+
+      // Convert LegacyTodo to Todo format for response
+      const todo: Todo = {
+        id: legacyTodo.id,
+        text: legacyTodo.text,
+        completed: legacyTodo.completed,
+        list_id: 0, // Default for legacy compatibility
+        created_at: legacyTodo.createdAt,
+      };
+
+      const response: ApiResponse<typeof todo> = {
+        data: todo,
+        success: true,
+      };
+      return reply.status(200).send(response);
+    } catch (error) {
+      // Let the global error handler deal with this
+      throw error;
     }
   }
-}, async (request, reply) => {
-  try {
-    const username = extractUsername(request);
-    const { id } = request.params as { id: number };
-    const { completed } = request.body as { completed: boolean };
-    const legacyTodo = await todoService.updateTodo(username, id, { completed });
-    
-    // Convert LegacyTodo to Todo format for response
-    const todo: Todo = {
-      id: legacyTodo.id,
-      text: legacyTodo.text,
-      completed: legacyTodo.completed,
-      list_id: 0, // Default for legacy compatibility
-      created_at: legacyTodo.createdAt,
-    };
-    
-    const response: ApiResponse<typeof todo> = {
-      data: todo,
-      success: true
-    };
-    return reply.status(200).send(response);
-  } catch (error) {
-    // Let the global error handler deal with this
-    throw error;
-  }
-});
+);
 
 // DELETE /api/todos/:id - Delete a todo
-fastify.delete('/api/todos/:id', {
-  preHandler: sessionMiddleware,
-  schema: {
-    params: {
-      type: 'object',
-      properties: {
-        id: { type: 'integer', minimum: 1 }
-      },
-      required: ['id']
-    },
-    response: {
-      204: {
+fastify.delete(
+  '/api/todos/:id',
+  {
+    preHandler: sessionMiddleware,
+    schema: {
+      params: {
         type: 'object',
         properties: {
-          success: { type: 'boolean', const: true }
+          id: { type: 'integer', minimum: 1 },
         },
-        required: ['success']
-      }
+        required: ['id'],
+      },
+      response: {
+        204: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', const: true },
+          },
+          required: ['success'],
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    try {
+      const username = extractUsername(request);
+      const { id } = request.params as { id: number };
+      await todoService.deleteTodo(username, id);
+      const response = {
+        success: true,
+      };
+      return reply.status(204).send(response);
+    } catch (error) {
+      // Let the global error handler deal with this
+      throw error;
     }
   }
-}, async (request, reply) => {
-  try {
-    const username = extractUsername(request);
-    const { id } = request.params as { id: number };
-    await todoService.deleteTodo(username, id);
-    const response = {
-      success: true
-    };
-    return reply.status(204).send(response);
-  } catch (error) {
-    // Let the global error handler deal with this
-    throw error;
-  }
-});
+);
 
 // Graceful shutdown handler
 const gracefulShutdown = async () => {
@@ -783,7 +860,7 @@ const start = async () => {
   try {
     // Initialize database before starting server
     await initializeDatabase();
-    
+
     await fastify.listen({ port: 3001, host: '0.0.0.0' });
     console.log('Server is running on http://localhost:3001');
   } catch (err) {

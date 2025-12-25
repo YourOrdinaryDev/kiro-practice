@@ -11,9 +11,7 @@
     <!-- Error state -->
     <div v-if="error" class="error-state">
       <p class="error-message">{{ error }}</p>
-      <button @click="$emit('reload')" class="retry-button">
-        Try Again
-      </button>
+      <button @click="$emit('reload')" class="retry-button">Try Again</button>
     </div>
 
     <!-- Lists display -->
@@ -28,12 +26,11 @@
         <div class="list-info">
           <h3 class="list-name">{{ list.name }}</h3>
           <span class="todo-count">
-            {{ list.todo_count || 0 }} {{ (list.todo_count || 0) === 1 ? 'todo' : 'todos' }}
+            {{ list.todo_count || 0 }}
+            {{ (list.todo_count || 0) === 1 ? 'todo' : 'todos' }}
           </span>
         </div>
-        <div v-if="list.id === activeListId" class="active-indicator">
-          ✓
-        </div>
+        <div v-if="list.id === activeListId" class="active-indicator">✓</div>
       </div>
     </div>
 
@@ -58,7 +55,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
-  error: null
+  error: null,
 });
 
 // Emits
@@ -117,8 +114,12 @@ const handleListSelect = (listId: number): void => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state {
@@ -232,15 +233,15 @@ const handleListSelect = (listId: number): void => {
   .selector-header {
     padding: 16px;
   }
-  
+
   .list-item {
     padding: 14px 16px;
   }
-  
+
   .list-name {
     font-size: 0.95rem;
   }
-  
+
   .todo-count {
     font-size: 0.8rem;
   }

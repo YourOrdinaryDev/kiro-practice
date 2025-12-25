@@ -1,5 +1,10 @@
 import { DatabaseConnection, getDbConnection } from '../database/index.js';
-import { Todo, CreateTodoRequest, UpdateTodoRequest, LegacyTodo } from '../types/todo.js';
+import {
+  Todo,
+  CreateTodoRequest,
+  UpdateTodoRequest,
+  LegacyTodo,
+} from '../types/todo.js';
 
 interface TodoRow {
   id: number;
@@ -33,7 +38,7 @@ export class TodoService {
         'SELECT name FROM migrations WHERE name = ?',
         ['migrate_to_multi_list_schema']
       );
-      
+
       this.isNewSchema = !!migration;
       return this.isNewSchema;
     } catch (error) {
@@ -48,10 +53,9 @@ export class TodoService {
    */
   private async getDefaultListId(username: string): Promise<number> {
     // First, get or create user
-    let user = await this.db.get(
-      'SELECT id FROM users WHERE username = ?',
-      [username]
-    );
+    let user = await this.db.get('SELECT id FROM users WHERE username = ?', [
+      username,
+    ]);
 
     if (!user) {
       const result = await this.db.run(
@@ -84,7 +88,7 @@ export class TodoService {
   async getAllTodos(username: string): Promise<LegacyTodo[]> {
     try {
       const isNewSchema = await this.checkSchemaVersion();
-      
+
       if (isNewSchema) {
         // New schema: get todos through list association
         const listId = await this.getDefaultListId(username);
@@ -94,9 +98,11 @@ export class TodoService {
           WHERE list_id = ?
           ORDER BY completed ASC, created_at DESC
         `;
-        
+
         const rows = await this.db.all<TodoRow>(sql, [listId]);
-        return rows.map(row => this.mapToLegacyTodo(this.mapRowToTodoNewSchema(row)));
+        return rows.map((row) =>
+          this.mapToLegacyTodo(this.mapRowToTodoNewSchema(row))
+        );
       } else {
         // Old schema: use username column
         const sql = `
@@ -105,12 +111,14 @@ export class TodoService {
           WHERE username = ?
           ORDER BY completed ASC, created_at DESC
         `;
-        
+
         const rows = await this.db.all<TodoRow>(sql, [username]);
         return rows.map(this.mapRowToTodoOldSchemaLegacy);
       }
     } catch (error) {
-      throw new Error(`Failed to retrieve todos: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to retrieve todos: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -120,9 +128,11 @@ export class TodoService {
   async getTodosInList(listId: number): Promise<Todo[]> {
     try {
       const isNewSchema = await this.checkSchemaVersion();
-      
+
       if (!isNewSchema) {
-        throw new Error('List-based operations require the new schema. Please run database migration first.');
+        throw new Error(
+          'List-based operations require the new schema. Please run database migration first.'
+        );
       }
 
       const sql = `
@@ -131,18 +141,23 @@ export class TodoService {
         WHERE list_id = ?
         ORDER BY completed ASC, created_at DESC
       `;
-      
+
       const rows = await this.db.all<TodoRow>(sql, [listId]);
-      return rows.map(row => this.mapRowToTodoNewSchema(row));
+      return rows.map((row) => this.mapRowToTodoNewSchema(row));
     } catch (error) {
-      throw new Error(`Failed to retrieve todos for list ${listId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to retrieve todos for list ${listId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Create a new todo item for a specific user
    */
-  async createTodo(username: string, data: CreateTodoRequest): Promise<LegacyTodo> {
+  async createTodo(
+    username: string,
+    data: CreateTodoRequest
+  ): Promise<LegacyTodo> {
     // Input validation
     if (typeof data.text !== 'string') {
       throw new Error('Todo text is required and must be a string');
@@ -159,14 +174,17 @@ export class TodoService {
 
     try {
       const isNewSchema = await this.checkSchemaVersion();
-      
+
       if (isNewSchema) {
         // New schema: use provided list_id or get default list for user
-        const listId = data.list_id || await this.getDefaultListId(username);
-        
+        const listId = data.list_id || (await this.getDefaultListId(username));
+
         // Verify the list exists and belongs to the user if list_id was provided
         if (data.list_id) {
-          const user = await this.db.get('SELECT id FROM users WHERE username = ?', [username]);
+          const user = await this.db.get(
+            'SELECT id FROM users WHERE username = ?',
+            [username]
+          );
           if (!user) {
             throw new Error('User not found');
           }
@@ -184,9 +202,9 @@ export class TodoService {
           INSERT INTO todos (text, completed, list_id) 
           VALUES (?, 0, ?)
         `;
-        
+
         const result = await this.db.run(sql, [trimmedText, listId]);
-        
+
         if (!result.lastID) {
           throw new Error('Failed to create todo: No ID returned');
         }
@@ -204,9 +222,9 @@ export class TodoService {
           INSERT INTO todos (text, completed, username) 
           VALUES (?, 0, ?)
         `;
-        
+
         const result = await this.db.run(sql, [trimmedText, username]);
-        
+
         if (!result.lastID) {
           throw new Error('Failed to create todo: No ID returned');
         }
@@ -220,10 +238,15 @@ export class TodoService {
         return createdTodo;
       }
     } catch (error) {
-      if (error instanceof Error && error.message.includes('CHECK constraint failed')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('CHECK constraint failed')
+      ) {
         throw new Error('Todo text cannot be empty or contain only whitespace');
       }
-      throw new Error(`Failed to create todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create todo: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -247,13 +270,17 @@ export class TodoService {
 
     try {
       const isNewSchema = await this.checkSchemaVersion();
-      
+
       if (!isNewSchema) {
-        throw new Error('List-based operations require the new schema. Please run database migration first.');
+        throw new Error(
+          'List-based operations require the new schema. Please run database migration first.'
+        );
       }
 
       // Verify the list exists
-      const list = await this.db.get('SELECT id FROM todo_lists WHERE id = ?', [listId]);
+      const list = await this.db.get('SELECT id FROM todo_lists WHERE id = ?', [
+        listId,
+      ]);
       if (!list) {
         throw new Error('List not found');
       }
@@ -262,9 +289,9 @@ export class TodoService {
         INSERT INTO todos (text, completed, list_id) 
         VALUES (?, 0, ?)
       `;
-      
+
       const result = await this.db.run(sql, [trimmedText, listId]);
-      
+
       if (!result.lastID) {
         throw new Error('Failed to create todo: No ID returned');
       }
@@ -277,17 +304,26 @@ export class TodoService {
 
       return createdTodo;
     } catch (error) {
-      if (error instanceof Error && error.message.includes('CHECK constraint failed')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('CHECK constraint failed')
+      ) {
         throw new Error('Todo text cannot be empty or contain only whitespace');
       }
-      throw new Error(`Failed to create todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create todo: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Update a todo's completion status (only if owned by the user)
    */
-  async updateTodo(username: string, id: number, data: UpdateTodoRequest): Promise<LegacyTodo> {
+  async updateTodo(
+    username: string,
+    id: number,
+    data: UpdateTodoRequest
+  ): Promise<LegacyTodo> {
     // Input validation
     if (!Number.isInteger(id) || id <= 0) {
       throw new Error('Todo ID must be a positive integer');
@@ -305,10 +341,13 @@ export class TodoService {
       }
 
       const isNewSchema = await this.checkSchemaVersion();
-      
+
       if (isNewSchema) {
         // New schema: update by verifying user ownership through list
-        const user = await this.db.get('SELECT id FROM users WHERE username = ?', [username]);
+        const user = await this.db.get(
+          'SELECT id FROM users WHERE username = ?',
+          [username]
+        );
         if (!user) {
           throw new Error('User not found');
         }
@@ -320,9 +359,13 @@ export class TodoService {
             SELECT id FROM todo_lists WHERE user_id = ?
           )
         `;
-        
-        const result = await this.db.run(sql, [data.completed ? 1 : 0, id, user.id]);
-        
+
+        const result = await this.db.run(sql, [
+          data.completed ? 1 : 0,
+          id,
+          user.id,
+        ]);
+
         if (result.changes === 0) {
           throw new Error(`Todo with ID ${id} not found`);
         }
@@ -333,9 +376,13 @@ export class TodoService {
           SET completed = ? 
           WHERE id = ? AND username = ?
         `;
-        
-        const result = await this.db.run(sql, [data.completed ? 1 : 0, id, username]);
-        
+
+        const result = await this.db.run(sql, [
+          data.completed ? 1 : 0,
+          id,
+          username,
+        ]);
+
         if (result.changes === 0) {
           throw new Error(`Todo with ID ${id} not found`);
         }
@@ -349,7 +396,9 @@ export class TodoService {
 
       return updatedTodo;
     } catch (error) {
-      throw new Error(`Failed to update todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to update todo: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -370,10 +419,13 @@ export class TodoService {
       }
 
       const isNewSchema = await this.checkSchemaVersion();
-      
+
       if (isNewSchema) {
         // New schema: delete by verifying user ownership through list
-        const user = await this.db.get('SELECT id FROM users WHERE username = ?', [username]);
+        const user = await this.db.get(
+          'SELECT id FROM users WHERE username = ?',
+          [username]
+        );
         if (!user) {
           throw new Error('User not found');
         }
@@ -385,7 +437,7 @@ export class TodoService {
           )
         `;
         const result = await this.db.run(sql, [id, user.id]);
-        
+
         if (result.changes === 0) {
           throw new Error(`Todo with ID ${id} not found`);
         }
@@ -393,20 +445,26 @@ export class TodoService {
         // Old schema: delete by username
         const sql = `DELETE FROM todos WHERE id = ? AND username = ?`;
         const result = await this.db.run(sql, [id, username]);
-        
+
         if (result.changes === 0) {
           throw new Error(`Todo with ID ${id} not found`);
         }
       }
     } catch (error) {
-      throw new Error(`Failed to delete todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to delete todo: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Move a todo from one list to another (new schema only)
    */
-  async moveTodoToList(todoId: number, targetListId: number, userId: number): Promise<Todo> {
+  async moveTodoToList(
+    todoId: number,
+    targetListId: number,
+    userId: number
+  ): Promise<Todo> {
     // Input validation
     if (!Number.isInteger(todoId) || todoId <= 0) {
       throw new Error('Todo ID must be a positive integer');
@@ -420,9 +478,11 @@ export class TodoService {
 
     try {
       const isNewSchema = await this.checkSchemaVersion();
-      
+
       if (!isNewSchema) {
-        throw new Error('List-based operations require the new schema. Please run database migration first.');
+        throw new Error(
+          'List-based operations require the new schema. Please run database migration first.'
+        );
       }
 
       // Verify the target list exists and belongs to the user
@@ -435,12 +495,15 @@ export class TodoService {
       }
 
       // Verify the todo exists and belongs to a list owned by the user
-      const todo = await this.db.get(`
+      const todo = await this.db.get(
+        `
         SELECT t.id, t.text, t.completed, t.created_at, t.list_id
         FROM todos t
         JOIN todo_lists tl ON t.list_id = tl.id
         WHERE t.id = ? AND tl.user_id = ?
-      `, [todoId, userId]);
+      `,
+        [todoId, userId]
+      );
 
       if (!todo) {
         throw new Error('Todo not found or does not belong to user');
@@ -449,7 +512,7 @@ export class TodoService {
       // Update the todo's list association
       const sql = `UPDATE todos SET list_id = ? WHERE id = ?`;
       const result = await this.db.run(sql, [targetListId, todoId]);
-      
+
       if (result.changes === 0) {
         throw new Error('Failed to move todo to target list');
       }
@@ -462,20 +525,28 @@ export class TodoService {
 
       return updatedTodo;
     } catch (error) {
-      throw new Error(`Failed to move todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to move todo: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Helper method to get a todo by ID for a specific user (returns LegacyTodo for compatibility)
    */
-  private async getTodoById(id: number, username: string): Promise<LegacyTodo | null> {
+  private async getTodoById(
+    id: number,
+    username: string
+  ): Promise<LegacyTodo | null> {
     try {
       const isNewSchema = await this.checkSchemaVersion();
-      
+
       if (isNewSchema) {
         // New schema: get by user ownership through list
-        const user = await this.db.get('SELECT id FROM users WHERE username = ?', [username]);
+        const user = await this.db.get(
+          'SELECT id FROM users WHERE username = ?',
+          [username]
+        );
         if (!user) {
           return null;
         }
@@ -486,9 +557,11 @@ export class TodoService {
           JOIN todo_lists tl ON t.list_id = tl.id
           WHERE t.id = ? AND tl.user_id = ?
         `;
-        
+
         const row = await this.db.get<TodoRow>(sql, [id, user.id]);
-        return row ? this.mapToLegacyTodo(this.mapRowToTodoNewSchema(row)) : null;
+        return row
+          ? this.mapToLegacyTodo(this.mapRowToTodoNewSchema(row))
+          : null;
       } else {
         // Old schema: get by username
         const sql = `
@@ -496,24 +569,31 @@ export class TodoService {
           FROM todos 
           WHERE id = ? AND username = ?
         `;
-        
+
         const row = await this.db.get<TodoRow>(sql, [id, username]);
         return row ? this.mapRowToTodoOldSchemaLegacy(row) : null;
       }
     } catch (error) {
-      throw new Error(`Failed to retrieve todo by ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to retrieve todo by ID: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Helper method to get a todo by ID within a specific list (new schema only)
    */
-  private async getTodoByIdInList(id: number, listId: number): Promise<Todo | null> {
+  private async getTodoByIdInList(
+    id: number,
+    listId: number
+  ): Promise<Todo | null> {
     try {
       const isNewSchema = await this.checkSchemaVersion();
-      
+
       if (!isNewSchema) {
-        throw new Error('List-based operations require the new schema. Please run database migration first.');
+        throw new Error(
+          'List-based operations require the new schema. Please run database migration first.'
+        );
       }
 
       const sql = `
@@ -521,11 +601,13 @@ export class TodoService {
         FROM todos 
         WHERE id = ? AND list_id = ?
       `;
-      
+
       const row = await this.db.get<TodoRow>(sql, [id, listId]);
       return row ? this.mapRowToTodoNewSchema(row) : null;
     } catch (error) {
-      throw new Error(`Failed to retrieve todo by ID in list: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to retrieve todo by ID in list: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -538,7 +620,7 @@ export class TodoService {
       text: row.text,
       completed: Boolean(row.completed),
       list_id: 0, // Default for old schema
-      created_at: new Date(row.created_at)
+      created_at: new Date(row.created_at),
     };
   }
 
@@ -551,7 +633,7 @@ export class TodoService {
       text: row.text,
       completed: Boolean(row.completed),
       createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at || row.created_at)
+      updatedAt: new Date(row.updated_at || row.created_at),
     };
   }
 
@@ -564,7 +646,7 @@ export class TodoService {
       text: row.text,
       completed: Boolean(row.completed),
       list_id: row.list_id!,
-      created_at: new Date(row.created_at)
+      created_at: new Date(row.created_at),
     };
   }
 
@@ -577,7 +659,7 @@ export class TodoService {
       text: todo.text,
       completed: todo.completed,
       createdAt: todo.created_at,
-      updatedAt: todo.created_at // Use created_at as fallback for updated_at
+      updatedAt: todo.created_at, // Use created_at as fallback for updated_at
     };
   }
 }

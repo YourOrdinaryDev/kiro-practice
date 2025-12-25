@@ -9,7 +9,7 @@ vi.mock('../services/SessionManager.js', () => ({
     setUsername: vi.fn(),
     clearSession: vi.fn(),
     hasActiveSession: vi.fn(() => false),
-  }
+  },
 }));
 
 // Mock the TodoApiClient
@@ -18,7 +18,7 @@ vi.mock('../api/TodoApiClient.js', () => ({
     setUsername: vi.fn(),
     clearUsername: vi.fn(),
     getTodos: vi.fn(() => Promise.resolve([])),
-  }
+  },
 }));
 
 describe('App.vue', () => {
@@ -29,7 +29,9 @@ describe('App.vue', () => {
   it('renders username entry screen when no session is active', () => {
     const wrapper = mount(App);
     expect(wrapper.text()).toContain('Welcome to Todo App');
-    expect(wrapper.text()).toContain('Enter your username to access your personal todo list');
+    expect(wrapper.text()).toContain(
+      'Enter your username to access your personal todo list'
+    );
     expect(wrapper.text()).toContain('Start Session');
   });
 
@@ -39,10 +41,10 @@ describe('App.vue', () => {
     vi.mocked(sessionManager.getCurrentUsername).mockReturnValue('testuser');
 
     const wrapper = mount(App);
-    
+
     // Wait for component to initialize
     await wrapper.vm.$nextTick();
-    
+
     // Should show session header with username
     expect(wrapper.text()).toContain('Welcome back,');
     expect(wrapper.text()).toContain('testuser');

@@ -1,4 +1,15 @@
-import type { Todo, TodoList, User, CreateTodoRequest, UpdateTodoRequest, CreateTodoListRequest, UpdateTodoListRequest, CreateUserRequest, MoveTodoRequest, ApiResponse, ApiError } from '../types/todo.js';
+import type {
+  Todo,
+  TodoList,
+  User,
+  CreateTodoRequest,
+  UpdateTodoRequest,
+  CreateTodoListRequest,
+  UpdateTodoListRequest,
+  MoveTodoRequest,
+  ApiResponse,
+  ApiError,
+} from '../types/todo.js';
 
 /**
  * Safely convert a date string or Date object to a Date instance
@@ -9,11 +20,11 @@ function safelyConvertDate(dateValue: any): Date {
   if (!dateValue) {
     return new Date();
   }
-  
+
   if (dateValue instanceof Date) {
     return dateValue;
   }
-  
+
   try {
     const converted = new Date(dateValue);
     // Check if the date is valid
@@ -87,17 +98,20 @@ export class TodoApiClient {
    */
   async getOrCreateUser(username: string): Promise<User> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/users/${encodeURIComponent(username)}`, {
-        method: 'GET',
-        headers: this.createHeaders(),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/api/users/${encodeURIComponent(username)}`,
+        {
+          method: 'GET',
+          headers: this.createHeaders(),
+        }
+      );
 
       if (!response.ok) {
         await this.handleErrorResponse(response);
       }
 
       const result: ApiResponse<User> = await response.json();
-      
+
       return {
         ...result.data,
         created_at: safelyConvertDate(result.data.created_at),
@@ -118,18 +132,21 @@ export class TodoApiClient {
    */
   async getListsForUser(userId: number): Promise<TodoList[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/users/${userId}/lists`, {
-        method: 'GET',
-        headers: this.createHeaders(),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/api/users/${userId}/lists`,
+        {
+          method: 'GET',
+          headers: this.createHeaders(),
+        }
+      );
 
       if (!response.ok) {
         await this.handleErrorResponse(response);
       }
 
       const result: ApiResponse<TodoList[]> = await response.json();
-      
-      return result.data.map(list => ({
+
+      return result.data.map((list) => ({
         ...list,
         created_at: safelyConvertDate(list.created_at),
       }));
@@ -152,18 +169,21 @@ export class TodoApiClient {
     try {
       const requestBody: CreateTodoListRequest = { name, user_id: userId };
 
-      const response = await fetch(`${this.baseUrl}/api/users/${userId}/lists`, {
-        method: 'POST',
-        headers: this.createHeaders(),
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/api/users/${userId}/lists`,
+        {
+          method: 'POST',
+          headers: this.createHeaders(),
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       if (!response.ok) {
         await this.handleErrorResponse(response);
       }
 
       const result: ApiResponse<TodoList> = await response.json();
-      
+
       return {
         ...result.data,
         created_at: safelyConvertDate(result.data.created_at),
@@ -198,7 +218,7 @@ export class TodoApiClient {
       }
 
       const result: ApiResponse<TodoList> = await response.json();
-      
+
       return {
         ...result.data,
         created_at: safelyConvertDate(result.data.created_at),
@@ -243,18 +263,21 @@ export class TodoApiClient {
    */
   async getTodosInList(listId: number): Promise<Todo[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/lists/${listId}/todos`, {
-        method: 'GET',
-        headers: this.createHeaders(),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/api/lists/${listId}/todos`,
+        {
+          method: 'GET',
+          headers: this.createHeaders(),
+        }
+      );
 
       if (!response.ok) {
         await this.handleErrorResponse(response);
       }
 
       const result: ApiResponse<Todo[]> = await response.json();
-      
-      return result.data.map(todo => ({
+
+      return result.data.map((todo) => ({
         ...todo,
         created_at: safelyConvertDate(todo.created_at),
       }));
@@ -277,18 +300,21 @@ export class TodoApiClient {
     try {
       const requestBody: CreateTodoRequest = { text, list_id: listId };
 
-      const response = await fetch(`${this.baseUrl}/api/lists/${listId}/todos`, {
-        method: 'POST',
-        headers: this.createHeaders(),
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetch(
+        `${this.baseUrl}/api/lists/${listId}/todos`,
+        {
+          method: 'POST',
+          headers: this.createHeaders(),
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       if (!response.ok) {
         await this.handleErrorResponse(response);
       }
 
       const result: ApiResponse<Todo> = await response.json();
-      
+
       return {
         ...result.data,
         created_at: safelyConvertDate(result.data.created_at),
@@ -323,7 +349,7 @@ export class TodoApiClient {
       }
 
       const result: ApiResponse<Todo> = await response.json();
-      
+
       return {
         ...result.data,
         created_at: safelyConvertDate(result.data.created_at),
@@ -352,9 +378,9 @@ export class TodoApiClient {
       }
 
       const result: ApiResponse<Todo[]> = await response.json();
-      
+
       // Convert date strings back to Date objects
-      return result.data.map(todo => ({
+      return result.data.map((todo) => ({
         ...todo,
         created_at: safelyConvertDate(todo.created_at),
       }));
@@ -387,7 +413,7 @@ export class TodoApiClient {
       }
 
       const result: ApiResponse<Todo> = await response.json();
-      
+
       // Convert date strings back to Date objects
       return {
         ...result.data,
@@ -423,7 +449,7 @@ export class TodoApiClient {
       }
 
       const result: ApiResponse<Todo> = await response.json();
-      
+
       // Convert date strings back to Date objects
       return {
         ...result.data,
@@ -471,7 +497,7 @@ export class TodoApiClient {
    */
   private async handleErrorResponse(response: Response): Promise<never> {
     let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-    
+
     try {
       // Try to parse error response as JSON
       const errorResult: ApiError = await response.json();
@@ -489,7 +515,9 @@ export class TodoApiClient {
         throw new Error(`Invalid request: ${errorMessage}`);
       case 401:
         // Authentication required - session may have expired or username missing
-        throw new AuthenticationError(`Authentication required: ${errorMessage}`);
+        throw new AuthenticationError(
+          `Authentication required: ${errorMessage}`
+        );
       case 403:
         // Access denied - user doesn't have permission for this resource
         throw new AuthenticationError(`Access denied: ${errorMessage}`);

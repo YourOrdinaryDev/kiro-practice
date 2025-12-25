@@ -8,7 +8,11 @@ export interface UserSession {
 }
 
 export interface SessionError {
-  code: 'INVALID_USERNAME' | 'SESSION_REQUIRED' | 'ACCESS_DENIED' | 'STORAGE_ERROR';
+  code:
+    | 'INVALID_USERNAME'
+    | 'SESSION_REQUIRED'
+    | 'ACCESS_DENIED'
+    | 'STORAGE_ERROR';
   message: string;
   details?: {
     username?: string;

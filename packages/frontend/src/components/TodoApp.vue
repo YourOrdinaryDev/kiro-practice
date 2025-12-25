@@ -2,7 +2,6 @@
   <div class="todo-app">
     <!-- Main app content -->
     <div class="authenticated-app">
-
       <main class="app-main">
         <!-- Loading state -->
         <div v-if="loading" class="loading-state">
@@ -12,9 +11,7 @@
         <!-- Error state -->
         <div v-else-if="error" class="error-state">
           <p class="error-message">{{ error }}</p>
-          <button @click="loadUserData" class="retry-button">
-            Try Again
-          </button>
+          <button @click="loadUserData" class="retry-button">Try Again</button>
         </div>
 
         <!-- Main content -->
@@ -28,9 +25,9 @@
               @list-select="handleListSelect"
               @reload="() => loadLists()"
             />
-            
+
             <div class="sidebar-divider"></div>
-            
+
             <ListManager
               :lists="todoLists"
               :loading="listsLoading"
@@ -49,15 +46,15 @@
             </div>
 
             <div v-if="activeListId" class="todo-section">
-              <TodoForm 
-                @submit="handleCreateTodo" 
+              <TodoForm
+                @submit="handleCreateTodo"
                 :submitting="submitting"
                 :placeholder="`Add a todo to ${activeList?.name || 'this list'}...`"
               />
-              <TodoListComponent 
-                :todos="todos" 
-                @toggle="handleToggleTodo" 
-                @delete="handleDeleteTodo" 
+              <TodoListComponent
+                :todos="todos"
+                @toggle="handleToggleTodo"
+                @delete="handleDeleteTodo"
               />
             </div>
 
@@ -93,7 +90,7 @@ const submitting = ref<boolean>(false);
 
 // Computed properties
 const activeList = computed(() => {
-  return todoLists.value.find(list => list.id === activeListId.value) || null;
+  return todoLists.value.find((list) => list.id === activeListId.value) || null;
 });
 
 /**
@@ -102,16 +99,17 @@ const activeList = computed(() => {
 const loadUserData = async (): Promise<void> => {
   const username = todoApiClient.getCurrentUsername();
   if (!username) return;
-  
+
   loading.value = true;
   error.value = null;
-  
+
   try {
     // Get user to ensure they exist
     const user = await todoApiClient.getOrCreateUser(username);
     await loadLists(user.id);
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load user data';
+    error.value =
+      err instanceof Error ? err.message : 'Failed to load user data';
     console.error('Error loading user data:', err);
   } finally {
     loading.value = false;
@@ -125,10 +123,10 @@ const loadUserData = async (): Promise<void> => {
 const loadLists = async (userId?: number): Promise<void> => {
   const username = todoApiClient.getCurrentUsername();
   if (!username) return;
-  
+
   listsLoading.value = true;
   listsError.value = null;
-  
+
   try {
     // Get user ID if not provided
     let currentUserId = userId;
@@ -136,17 +134,18 @@ const loadLists = async (userId?: number): Promise<void> => {
       const user = await todoApiClient.getOrCreateUser(username);
       currentUserId = user.id;
     }
-    
+
     const lists = await todoApiClient.getListsForUser(currentUserId);
     todoLists.value = lists;
-    
+
     // Auto-select first list if none selected
     if (lists.length > 0 && !activeListId.value) {
       activeListId.value = lists[0].id;
       await loadTodosForList(lists[0].id);
     }
   } catch (err) {
-    listsError.value = err instanceof Error ? err.message : 'Failed to load lists';
+    listsError.value =
+      err instanceof Error ? err.message : 'Failed to load lists';
     console.error('Error loading lists:', err);
   } finally {
     listsLoading.value = false;
@@ -173,7 +172,7 @@ const loadTodosForList = async (listId: number): Promise<void> => {
  */
 const handleListSelect = async (listId: number): Promise<void> => {
   if (listId === activeListId.value) return;
-  
+
   activeListId.value = listId;
   await loadTodosForList(listId);
 };
@@ -185,12 +184,12 @@ const handleListSelect = async (listId: number): Promise<void> => {
 const handleCreateList = async (name: string): Promise<void> => {
   const username = todoApiClient.getCurrentUsername();
   if (!username) return;
-  
+
   try {
     const user = await todoApiClient.getOrCreateUser(username);
     const newList = await todoApiClient.createList(user.id, name);
     todoLists.value.push(newList);
-    
+
     // Auto-select the new list
     activeListId.value = newList.id;
     todos.value = []; // New list starts empty
@@ -204,10 +203,13 @@ const handleCreateList = async (name: string): Promise<void> => {
  * Handle updating a list name
  * Implements Requirements 3.1 - Rename list
  */
-const handleUpdateList = async (listId: number, name: string): Promise<void> => {
+const handleUpdateList = async (
+  listId: number,
+  name: string
+): Promise<void> => {
   try {
     const updatedList = await todoApiClient.updateList(listId, name);
-    const index = todoLists.value.findIndex(list => list.id === listId);
+    const index = todoLists.value.findIndex((list) => list.id === listId);
     if (index !== -1) {
       todoLists.value[index] = updatedList;
     }
@@ -224,8 +226,8 @@ const handleUpdateList = async (listId: number, name: string): Promise<void> => 
 const handleDeleteList = async (listId: number): Promise<void> => {
   try {
     await todoApiClient.deleteList(listId);
-    todoLists.value = todoLists.value.filter(list => list.id !== listId);
-    
+    todoLists.value = todoLists.value.filter((list) => list.id !== listId);
+
     // If deleted list was active, select another list
     if (activeListId.value === listId) {
       if (todoLists.value.length > 0) {
@@ -251,18 +253,24 @@ const handleCreateTodo = async (text: string): Promise<void> => {
     error.value = 'Please select a list first';
     return;
   }
-  
+
   submitting.value = true;
   error.value = null;
-  
+
   try {
-    const newTodo = await todoApiClient.createTodoInList(activeListId.value, text);
+    const newTodo = await todoApiClient.createTodoInList(
+      activeListId.value,
+      text
+    );
     todos.value.push(newTodo);
-    
+
     // Update list todo count
-    const listIndex = todoLists.value.findIndex(list => list.id === activeListId.value);
+    const listIndex = todoLists.value.findIndex(
+      (list) => list.id === activeListId.value
+    );
     if (listIndex !== -1) {
-      todoLists.value[listIndex].todo_count = (todoLists.value[listIndex].todo_count || 0) + 1;
+      todoLists.value[listIndex].todo_count =
+        (todoLists.value[listIndex].todo_count || 0) + 1;
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to create todo';
@@ -277,12 +285,12 @@ const handleCreateTodo = async (text: string): Promise<void> => {
  * Implements Requirements 3.1 - Toggle completion status
  */
 const handleToggleTodo = async (id: number): Promise<void> => {
-  const todo = todos.value.find(t => t.id === id);
+  const todo = todos.value.find((t) => t.id === id);
   if (!todo) return;
-  
+
   try {
     const updatedTodo = await todoApiClient.updateTodo(id, !todo.completed);
-    const index = todos.value.findIndex(t => t.id === id);
+    const index = todos.value.findIndex((t) => t.id === id);
     if (index !== -1) {
       todos.value[index] = updatedTodo;
     }
@@ -299,12 +307,17 @@ const handleToggleTodo = async (id: number): Promise<void> => {
 const handleDeleteTodo = async (id: number): Promise<void> => {
   try {
     await todoApiClient.deleteTodo(id);
-    todos.value = todos.value.filter(t => t.id !== id);
-    
+    todos.value = todos.value.filter((t) => t.id !== id);
+
     // Update list todo count
-    const listIndex = todoLists.value.findIndex(list => list.id === activeListId.value);
+    const listIndex = todoLists.value.findIndex(
+      (list) => list.id === activeListId.value
+    );
     if (listIndex !== -1 && todoLists.value[listIndex].todo_count) {
-      todoLists.value[listIndex].todo_count = Math.max(0, todoLists.value[listIndex].todo_count - 1);
+      todoLists.value[listIndex].todo_count = Math.max(
+        0,
+        todoLists.value[listIndex].todo_count - 1
+      );
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to delete todo';
@@ -324,7 +337,8 @@ onMounted(async () => {
 
 <style scoped>
 .todo-app {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
 }
 
@@ -458,21 +472,21 @@ onMounted(async () => {
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
+
   .sidebar {
     order: 2;
   }
-  
+
   .main-content {
     order: 1;
   }
-  
+
   .list-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .list-header h2 {
     font-size: 1.5rem;
   }

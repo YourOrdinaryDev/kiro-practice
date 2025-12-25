@@ -29,12 +29,10 @@
         </p>
         <div class="todo-metadata">
           <span class="todo-date">
-            {{ todo.completed ? 'Completed' : 'Created' }} 
+            {{ todo.completed ? 'Completed' : 'Created' }}
             {{ formatDate(todo.created_at) }}
           </span>
-          <span v-if="todo.completed" class="completion-badge">
-            ✓ Done
-          </span>
+          <span v-if="todo.completed" class="completion-badge"> ✓ Done </span>
         </div>
       </div>
     </div>
@@ -48,7 +46,7 @@
       >
         {{ todo.completed ? '↶' : '✓' }}
       </button>
-      
+
       <button
         class="action-button delete-button"
         @click="handleDelete"
@@ -102,10 +100,10 @@ const formatDate = (date: Date | undefined): string => {
   if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
     return 'unknown';
   }
-  
+
   const now = new Date();
   const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-  
+
   if (diffInHours < 1) {
     const diffInMinutes = Math.floor(diffInHours * 60);
     return diffInMinutes <= 1 ? 'just now' : `${diffInMinutes} minutes ago`;
@@ -131,7 +129,9 @@ const formatDate = (date: Date | undefined): string => {
   justify-content: space-between;
   padding: 16px 24px;
   border-bottom: 1px solid #f1f3f4;
-  transition: background-color 0.2s, opacity 0.2s;
+  transition:
+    background-color 0.2s,
+    opacity 0.2s;
   background-color: white;
 }
 
@@ -274,17 +274,17 @@ const formatDate = (date: Date | undefined): string => {
   .todo-actions {
     opacity: 1;
   }
-  
+
   .todo-item {
     padding: 12px 20px;
   }
-  
+
   .action-button {
     width: 36px;
     height: 36px;
     font-size: 1rem;
   }
-  
+
   .todo-text {
     font-size: 0.95rem;
   }

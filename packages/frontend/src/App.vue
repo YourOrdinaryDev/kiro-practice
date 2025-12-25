@@ -1,12 +1,12 @@
 <template>
   <div id="app">
     <!-- Session-based routing: Show UsernameEntry if no active session -->
-    <UsernameEntry 
-      v-if="!hasActiveSession" 
+    <UsernameEntry
+      v-if="!hasActiveSession"
       @username-submit="handleUsernameSubmit"
       :error="sessionError"
     />
-    
+
     <!-- Show main app with session controls if user is logged in -->
     <div v-else class="app-with-session">
       <!-- Session header with username display and logout -->
@@ -15,15 +15,15 @@
           <span class="welcome-text">Welcome back,</span>
           <span class="current-username">{{ currentUsername }}</span>
         </div>
-        <button 
-          @click="handleLogout" 
+        <button
+          @click="handleLogout"
           class="logout-button"
           title="End session and return to login"
         >
           End Session
         </button>
       </header>
-      
+
       <!-- Main todo application -->
       <TodoApp />
     </div>
@@ -54,19 +54,20 @@ const handleUsernameSubmit = (username: string): void => {
   try {
     // Clear any previous errors
     sessionError.value = null;
-    
+
     // Set the username in session manager (already done in UsernameEntry, but ensure consistency)
     sessionManager.setUsername(username);
-    
+
     // Configure API client with username
     todoApiClient.setUsername(username);
-    
+
     // Update current username state
     currentUsername.value = username;
-    
+
     console.log(`Session established for user: ${username}`);
   } catch (error) {
-    sessionError.value = error instanceof Error ? error.message : 'Failed to establish session';
+    sessionError.value =
+      error instanceof Error ? error.message : 'Failed to establish session';
     console.error('Session establishment error:', error);
   }
 };
@@ -79,14 +80,14 @@ const handleLogout = (): void => {
   try {
     // Clear session data
     sessionManager.clearSession();
-    
+
     // Clear API client username
     todoApiClient.clearUsername();
-    
+
     // Update state
     currentUsername.value = null;
     sessionError.value = null;
-    
+
     console.log('Session terminated successfully');
   } catch (error) {
     console.error('Error during logout:', error);
@@ -103,7 +104,7 @@ const handleLogout = (): void => {
 const initializeSession = (): void => {
   try {
     const existingUsername = sessionManager.getCurrentUsername();
-    
+
     if (existingUsername) {
       // Restore session
       currentUsername.value = existingUsername;
@@ -213,7 +214,8 @@ onMounted(() => {
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: #f8f9fa;
 }
 
@@ -225,20 +227,20 @@ body {
     gap: 10px;
     text-align: center;
   }
-  
+
   .session-info {
     flex-direction: column;
     gap: 4px;
   }
-  
+
   .welcome-text {
     font-size: 0.85rem;
   }
-  
+
   .current-username {
     font-size: 0.9rem;
   }
-  
+
   .logout-button {
     font-size: 0.85rem;
     padding: 6px 12px;
@@ -249,7 +251,7 @@ body {
   .session-header {
     padding: 8px 10px;
   }
-  
+
   .current-username {
     padding: 3px 8px;
     font-size: 0.85rem;

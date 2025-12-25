@@ -38,31 +38,32 @@ export async function sessionMiddleware(
   reply: FastifyReply
 ): Promise<void> {
   const usernameHeader = request.headers['x-username'] as string | undefined;
-  
+
   // Extract username from header
   const username = validateUsername(usernameHeader);
-  
+
   if (!username) {
     const errorResponse: ApiError = {
       success: false,
       error: {
         code: 'INVALID_USERNAME',
-        message: 'Valid username is required. Username must be 1-50 non-whitespace characters.',
+        message:
+          'Valid username is required. Username must be 1-50 non-whitespace characters.',
         details: {
           header: 'X-Username',
           received: usernameHeader ?? null,
           validationRules: [
             'Must be 1-50 characters long',
             'Cannot be empty or only whitespace',
-            'Must contain at least one non-whitespace character'
-          ]
-        }
-      }
+            'Must contain at least one non-whitespace character',
+          ],
+        },
+      },
     };
-    
+
     return reply.status(401).send(errorResponse);
   }
-  
+
   // Add username to request object for downstream handlers
   (request as SessionRequest).username = username;
 }
@@ -73,7 +74,9 @@ export async function sessionMiddleware(
 export function extractUsername(request: FastifyRequest): string {
   const sessionRequest = request as SessionRequest;
   if (!sessionRequest.username) {
-    throw new Error('Username not found in request. Ensure session middleware is applied.');
+    throw new Error(
+      'Username not found in request. Ensure session middleware is applied.'
+    );
   }
   return sessionRequest.username;
 }
