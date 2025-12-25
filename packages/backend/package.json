@@ -5,15 +5,17 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "test": "vitest --run",
     "test:watch": "vitest",
     "lint": "eslint . --ext .ts --fix",
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@fastify/cors": "^9.0.0",
+    "@types/sqlite3": "^3.1.11",
     "fastify": "^4.24.0",
-    "@fastify/cors": "^9.0.0"
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
