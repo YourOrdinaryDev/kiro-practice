@@ -2,6 +2,11 @@
 
 A full-stack todo list management application built with TypeScript, featuring a Vue 3 frontend and Fastify backend. Users can create multiple todo lists, manage todo items within each list, and organize their tasks with a clean, reactive interface.
 
+## Changelog
+
+### Version 1.6.7
+- Nothing has changed, this is just a test
+
 ## Features
 
 ### Core Functionality
